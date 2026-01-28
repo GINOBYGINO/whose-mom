@@ -3,29 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>綠色相簿趴 v0.1</title>
+    <title>綠色相簿趴 v0.2</title>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
         :root {
-            /* 調整為更深色調 */
-            --primary-green: #27ae60;
+            --primary-green: #2ecc71;
             --dark-green: #1b5e20;
-            --bg-color: #0a1f14; /* 深森林綠 */
-            --card-bg: #1e2d24;  /* 深灰綠卡片 */
-            --text-color: #e0e0e0;
+            --bg-grad: linear-gradient(135deg, #05140b 0%, #0d2b1a 100%);
+            --card-grad: linear-gradient(180deg, #1e2d24 0%, #152019 100%);
+            --text-color: #e0e8e3;
             --accent-yellow: #f1c40f;
-            --error-red: #e74c3c;
+            --error-red: #ff4757;
         }
 
         body {
             font-family: 'Segoe UI', "Microsoft JhengHei", sans-serif;
-            background-color: var(--bg-color);
+            background: var(--bg-grad);
             color: var(--text-color);
             margin: 0;
             display: flex;
             flex-direction: column;
             align-items: center;
             min-height: 100vh;
+            overflow-x: hidden;
         }
 
         .container {
@@ -36,56 +36,72 @@
         }
 
         .card {
-            background: var(--card-bg);
-            border-radius: 20px;
+            background: var(--card-grad);
+            border-radius: 24px;
             padding: 25px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.6), inset 0 1px 1px rgba(255,255,255,0.05);
             margin-top: 20px;
-            border: 1px solid rgba(255,255,255,0.1);
-            border-bottom: 5px solid var(--primary-green);
+            border: 1px solid rgba(46, 204, 113, 0.2);
+            position: relative;
         }
 
-        h1 { color: var(--primary-green); margin-bottom: 10px; text-shadow: 0 2px 4px rgba(0,0,0,0.3); }
-        h3 { color: var(--primary-green); }
-        .hidden { display: none; }
+        /* 增加發光效果 */
+        .card::after {
+            content: '';
+            position: absolute;
+            top: -2px; left: -2px; right: -2px; bottom: -2px;
+            background: linear-gradient(45deg, transparent, rgba(46, 204, 113, 0.1), transparent);
+            z-index: -1;
+            border-radius: 26px;
+        }
+
+        h1 { 
+            background: linear-gradient(to bottom, #2ecc71, #27ae60);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-size: 2rem;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+        }
+
+        .hidden { display: none !important; }
 
         input[type="text"] {
             width: 85%;
-            padding: 12px;
+            padding: 14px;
             margin: 10px 0;
-            background: #2c3e50;
-            border: 2px solid var(--primary-green);
-            border-radius: 10px;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid var(--primary-green);
+            border-radius: 12px;
             color: white;
-            font-size: 1rem;
+            outline: none;
+            transition: box-shadow 0.3s;
         }
+        input[type="text"]:focus { box-shadow: 0 0 10px rgba(46, 204, 113, 0.4); }
 
         button {
-            background-color: var(--primary-green);
+            background: linear-gradient(180deg, #2ecc71 0%, #27ae60 100%);
             color: white;
             border: none;
-            padding: 12px 24px;
-            font-size: 1.1rem;
+            padding: 14px 28px;
+            font-size: 1rem;
             border-radius: 50px;
             cursor: pointer;
-            transition: all 0.2s;
-            margin: 5px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
             font-weight: bold;
+            transition: 0.2s;
         }
+        button:hover { transform: translateY(-2px); filter: brightness(1.1); }
+        button:active { transform: translateY(1px); }
+        button:disabled { background: #444; color: #888; transform: none; box-shadow: none; }
 
-        button:hover { background-color: #2ecc71; transform: translateY(-2px); }
-        button:active { transform: translateY(0); }
-        button:disabled { background-color: #555; cursor: not-allowed; }
-
-        .timer { font-size: 2rem; font-weight: bold; color: var(--accent-yellow); margin: 10px 0; }
-        .photo-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; }
-        .photo-item img { width: 100%; aspect-ratio: 1/1; object-fit: cover; border-radius: 10px; border: 3px solid transparent; cursor: pointer; }
-        .selected { border-color: var(--accent-yellow) !important; box-shadow: 0 0 15px var(--accent-yellow); }
+        .timer { font-size: 2.5rem; font-weight: 800; color: var(--accent-yellow); margin: 10px 0; text-shadow: 0 0 10px rgba(241, 196, 15, 0.3); }
         
-        .status-badge { background: #2c3e50; padding: 6px 12px; border-radius: 15px; font-size: 0.9rem; margin: 4px; display: inline-block; border: 1px solid #444; }
+        .photo-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 20px; }
+        .photo-item img { width: 100%; aspect-ratio: 1/1; object-fit: cover; border-radius: 12px; border: 3px solid transparent; transition: 0.3s; }
+        .selected { border-color: var(--accent-yellow) !important; transform: scale(1.02); }
         
-        .version-tag { position: fixed; bottom: 10px; right: 10px; font-size: 0.8rem; color: #555; }
-        hr { border: 0; border-top: 1px solid #333; margin: 20px 0; }
+        .status-badge { background: rgba(46, 204, 113, 0.1); padding: 8px 16px; border-radius: 50px; border: 1px solid rgba(46, 204, 113, 0.3); margin: 5px; font-size: 0.9rem; }
+        .version-tag { position: fixed; bottom: 10px; right: 15px; font-size: 0.75rem; color: rgba(255,255,255,0.2); }
     </style>
 </head>
 <body>
@@ -95,100 +111,99 @@
     
     <div id="view-lobby" class="view">
         <div class="card">
-            <h3>準備開始</h3>
-            <input type="text" id="player-name" placeholder="輸入你的暱稱">
+            <h3>遊戲登入</h3>
+            <input type="text" id="player-name" placeholder="輸入暱稱...">
             <br>
-            <button onclick="createRoom()">建立房間 (Host)</button>
-            <hr>
-            <input type="text" id="room-id-input" placeholder="輸入房號">
-            <button onclick="joinRoom()">加入房間</button>
+            <button onclick="createRoom()">建立新房間</button>
+            <div style="margin: 20px 0; color: #555;">─── 或者 ───</div>
+            <input type="text" id="room-id-input" placeholder="輸入房號 (ID)...">
+            <button onclick="joinRoom()">加入好友房間</button>
         </div>
     </div>
 
     <div id="view-waiting" class="view hidden">
         <div class="card">
-            <h3>房號: <span id="display-room-id" style="color:var(--accent-yellow)">-</span></h3>
-            <p>已連線玩家 (<span id="player-count">0</span>/6):</p>
-            <div id="player-list"></div>
-            <div style="margin-top: 20px;">
-                <button id="start-game-btn" class="hidden" onclick="hostStartGame()">全員到齊，開始遊戲！</button>
+            <p>房間代碼</p>
+            <h2 id="display-room-id" style="color:var(--accent-yellow); letter-spacing: 2px;">-</h2>
+            <p>已準備玩家 (<span id="player-count">0</span>/6)</p>
+            <div id="player-list" style="display:flex; flex-wrap:wrap; justify-content:center;"></div>
+            <div style="margin-top: 30px;">
+                <button id="start-game-btn" class="hidden" onclick="hostStartGame()">全員到齊，開戰！</button>
             </div>
         </div>
     </div>
 
-    <div id="view-leader-input" class="view hidden">
+    <div id="view-game" class="view hidden">
         <div class="card">
-            <h2 id="leader-msg" style="color:var(--accent-yellow)">你是領袖，請出題</h2>
-            <p>讓大家去找最符合這句話的照片</p>
-            <input type="text" id="topic-input" placeholder="例如：手機裡最奇怪的照片">
-            <br>
-            <button onclick="submitTopic()">發布題目</button>
-        </div>
-    </div>
+            <div id="sub-waiting-topic" class="sub-view">
+                <h3 style="color:var(--accent-yellow)">等待領袖出題...</h3>
+                <p id="current-leader-name"></p>
+            </div>
 
-    <div id="view-upload" class="view hidden">
-        <div class="card">
-            <p>題目是：</p>
-            <h2 id="display-topic" style="color:var(--primary-green)"></h2>
-            <div class="timer" id="upload-timer">50</div>
-            <div id="upload-controls">
-                <input type="file" id="photo-input" accept="image/*" style="color: #ccc; margin-bottom: 10px;">
+            <div id="sub-leader-input" class="sub-view hidden">
+                <h3>你是本輪領袖！</h3>
+                <p>請出一個題目，讓大家從相簿找圖</p>
+                <input type="text" id="topic-input" placeholder="例如：這照片看起來很有味道">
                 <br>
-                <button onclick="processAndUpload()">確定上傳照片</button>
+                <button onclick="submitTopicToServer()">發布題目</button>
             </div>
-            <p id="upload-status">等待其他玩家...</p>
-        </div>
-    </div>
 
-    <div id="view-voting" class="view hidden">
-        <div class="card">
-            <h3 id="voting-instruction" style="color:var(--accent-yellow)">投票時間</h3>
-            <div class="timer" id="vote-timer">20</div>
-            <div class="photo-grid" id="voting-grid"></div>
-            <button id="submit-vote-btn" onclick="submitVote()" style="margin-top: 20px;">送出投票</button>
-        </div>
-    </div>
+            <div id="sub-upload" class="sub-view hidden">
+                <p>題目：</p>
+                <h2 id="display-topic" style="color:var(--primary-green)"></h2>
+                <div class="timer" id="upload-timer">50</div>
+                <div id="upload-controls">
+                    <input type="file" id="photo-input" accept="image/*" style="margin: 10px 0; color: #888;">
+                    <br>
+                    <button onclick="processAndUpload()">確認上傳照片</button>
+                </div>
+                <div id="upload-msg" class="hidden">已成功送出，等待其他玩家...</div>
+            </div>
 
-    <div id="view-results" class="view hidden">
-        <div class="card">
-            <h3>回合結果</h3>
-            <div id="round-rank" style="font-size: 1.2rem; line-height: 2;"></div>
-            <p style="color: #888; margin-top: 15px;">等待領袖進入下一回合...</p>
+            <div id="sub-voting" class="sub-view hidden">
+                <h3 id="voting-instruction" style="color:var(--accent-yellow)"></h3>
+                <div class="timer" id="vote-timer">20</div>
+                <div class="photo-grid" id="voting-grid"></div>
+                <br>
+                <button id="btn-submit-vote" onclick="submitVoteToServer()">確認投票</button>
+            </div>
+
+            <div id="sub-results" class="sub-view hidden">
+                <h3>回合計分</h3>
+                <div id="round-rank" style="font-size: 1.2rem; line-height: 2.5;"></div>
+            </div>
         </div>
     </div>
 
     <div id="view-final" class="view hidden">
         <div class="card">
-            <h2 style="color:var(--accent-yellow)">🏆 最終排名 🏆</h2>
-            <div id="final-leaderboard" style="font-size: 1.3rem;"></div>
+            <h2 style="color:var(--accent-yellow)">🏆 最終榮耀 🏆</h2>
+            <div id="final-leaderboard"></div>
             <button onclick="location.reload()" style="margin-top:20px">回首頁</button>
         </div>
     </div>
 </div>
 
-<div class="version-tag">v0.1</div>
+<div class="version-tag">v0.2 | Peer-to-Peer </div>
 
 <script>
     let peer, conn, roomId;
     let myName = "";
     let isHost = false;
     let players = []; 
-    let currentLeaderIndex = 0;
-    let roundsPerPlayer = 2;
-    let totalRounds = 0;
     let currentRound = 0;
-    let selectedPhotoPeerId = null;
+    let currentLeaderId = "";
     let timerInterval;
 
-    // --- 連線邏輯 ---
+    // --- 初始化與連線 ---
     function createRoom() {
-        myName = document.getElementById('player-name').value || "房主";
+        myName = document.getElementById('player-name').value.trim() || "房主";
         peer = new Peer();
         peer.on('open', id => {
             isHost = true;
             roomId = id;
             document.getElementById('display-room-id').innerText = id;
-            players.push({ id: id, name: myName, score: 0, isLeader: false });
+            players.push({ id: id, name: myName, score: 0, photo: null, votes: 0 });
             updateLobbyUI();
             switchView('view-waiting');
             document.getElementById('start-game-btn').classList.remove('hidden');
@@ -201,286 +216,268 @@
     }
 
     function joinRoom() {
-        myName = document.getElementById('player-name').value || "玩家";
-        roomId = document.getElementById('room-id-input').value;
+        myName = document.getElementById('player-name').value.trim() || "玩家";
+        roomId = document.getElementById('room-id-input').value.trim();
         if (!roomId) return alert("請輸入房號");
         
         peer = new Peer();
         peer.on('open', id => {
             conn = peer.connect(roomId);
             conn.on('open', () => {
-                conn.send({ type: 'JOIN', name: myName });
-                switchView('view-waiting');
-                document.getElementById('display-room-id').innerText = roomId;
+                conn.send({ type: 'JOIN_REQ', name: myName });
             });
             conn.on('data', data => handleData(data));
         });
     }
 
+    // --- 訊息處理核心 ---
     function handleData(data, connection) {
-        console.log("收到訊息:", data.type);
+        console.log("Receive:", data.type, data);
         switch(data.type) {
-            case 'JOIN':
+            case 'JOIN_REQ':
                 if (isHost) {
-                    players.push({ id: connection.peer, name: data.name, score: 0, isLeader: false, peerConn: connection });
-                    broadcast({ type: 'SYNC_PLAYERS', players: players.map(p => ({name: p.name, score: p.score})) });
+                    // (1) 檢查是否重複
+                    if (players.find(p => p.id === connection.peer || p.name === data.name)) {
+                        connection.send({ type: 'ERROR', msg: '名稱已存在或已在房間中' });
+                        return;
+                    }
+                    players.push({ id: connection.peer, name: data.name, score: 0, photo: null, votes: 0, peerConn: connection });
+                    broadcast({ type: 'SYNC_LOBBY', players: players.map(p => ({name: p.name})) });
                     updateLobbyUI();
                 }
                 break;
-            case 'SYNC_PLAYERS':
+            case 'SYNC_LOBBY':
                 updateLobbyUI(data.players);
+                switchView('view-waiting');
+                document.getElementById('display-room-id').innerText = roomId;
                 break;
-            case 'START_ROUND':
-                setupRound(data);
+            case 'GAME_STATE': // 強制狀態同步
+                syncGameState(data);
                 break;
-            case 'START_UPLOAD': // 修正點：Client 接收到領袖出題後的跳轉
-                showUploadUI(data.topic);
+            case 'CLIENT_SUBMIT_TOPIC': // 領袖(Client)發題目給 Host
+                if (isHost) startUploadPhase(data.topic);
                 break;
-            case 'UPLOAD_PHOTO':
+            case 'UPLOAD_PHOTO': // 玩家發照片給 Host
                 if (isHost) {
                     let p = players.find(x => x.id === connection.peer);
                     if(p) p.photo = data.photo;
-                    checkAllPhotosUploaded();
+                    checkAllPhotosStatus();
                 }
                 break;
-            case 'START_VOTING':
-                showVotingUI(data.photos, data.isLeader);
-                break;
             case 'VOTE_SUBMIT':
-                if (isHost) handleIncomingVote(data, connection.peer);
+                if (isHost) recordVote(data, connection.peer);
                 break;
-            case 'ROUND_OVER':
-                showResultUI(data);
-                break;
-            case 'GAME_OVER':
-                showFinalUI(data.players);
+            case 'ERROR':
+                alert(data.msg);
+                location.reload();
                 break;
         }
     }
 
     function broadcast(data) {
-        players.forEach(p => {
-            if (p.peerConn) p.peerConn.send(data);
-        });
+        players.forEach(p => { if (p.peerConn) p.peerConn.send(data); });
     }
 
-    // --- 遊戲流程 ---
+    // --- 流程控制 ---
     function hostStartGame() {
-        if (players.length < 3) return alert("至少需要 3 名玩家才能開始！");
-        totalRounds = players.length * roundsPerPlayer;
+        if (players.length < 3) return alert("至少需要 3 人");
         currentRound = 0;
         nextRound();
     }
 
     function nextRound() {
-        if (currentRound >= totalRounds) {
-            broadcast({ type: 'GAME_OVER', players: players });
-            showFinalUI(players);
+        const totalRoundsNeeded = players.length * 2;
+        if (currentRound >= totalRoundsNeeded) {
+            broadcast({ type: 'GAME_STATE', phase: 'FINAL', players: players });
+            syncGameState({ phase: 'FINAL', players: players });
             return;
         }
-        
-        players.forEach(p => { p.photo = null; p.votes = 0; p.isLeader = false; p.voted = false; });
-        currentLeaderIndex = currentRound % players.length;
-        players[currentLeaderIndex].isLeader = true;
-        
-        let leaderId = players[currentLeaderIndex].id;
-        broadcast({ type: 'START_ROUND', leaderId: leaderId });
-        setupRound({ leaderId: leaderId });
+
+        // 重置回合狀態
+        players.forEach(p => { p.photo = null; p.votes = 0; p.voted = false; });
+        const leader = players[currentRound % players.length];
+        currentLeaderId = leader.id;
         currentRound++;
+
+        broadcast({ 
+            type: 'GAME_STATE', 
+            phase: 'WAIT_TOPIC', 
+            leaderId: leader.id, 
+            leaderName: leader.name 
+        });
+        syncGameState({ phase: 'WAIT_TOPIC', leaderId: leader.id, leaderName: leader.name });
     }
 
-    function setupRound(data) {
-        const amILeader = (peer.id === data.leaderId);
-        if (amILeader) {
-            switchView('view-leader-input');
-        } else {
-            switchView('view-upload');
-            document.getElementById('upload-controls').classList.add('hidden');
-            document.getElementById('upload-status').innerText = "領袖正在思考題目...";
+    function syncGameState(data) {
+        switchView('view-game');
+        document.querySelectorAll('.sub-view').forEach(s => s.classList.add('hidden'));
+
+        if (data.phase === 'WAIT_TOPIC') {
+            if (peer.id === data.leaderId) {
+                showSubView('sub-leader-input');
+            } else {
+                showSubView('sub-waiting-topic');
+                document.getElementById('current-leader-name').innerText = `現在領袖是：${data.leaderName}`;
+            }
+        } 
+        else if (data.phase === 'UPLOADING') {
+            showSubView('sub-upload');
+            document.getElementById('display-topic').innerText = data.topic;
+            document.getElementById('upload-controls').classList.toggle('hidden', peer.id === data.leaderId);
+            document.getElementById('upload-msg').classList.toggle('hidden', peer.id !== data.leaderId);
+            if (peer.id === data.leaderId) document.getElementById('upload-msg').innerText = "你是領袖，等待大家挑選照片...";
+            startTimer(50, () => { if(isHost) checkAllPhotosStatus(); }, 'upload-timer');
+        }
+        else if (data.phase === 'VOTING') {
+            showSubView('sub-voting');
+            renderVotingGrid(data.photos);
+            const amILeader = peer.id === data.leaderId;
+            document.getElementById('voting-instruction').innerText = amILeader ? "你是領袖：挑一張最喜歡的 (+2分)" : "挑一張最不喜歡的照片 (-1分)";
+            startTimer(20, () => submitVoteToServer(), 'vote-timer');
+        }
+        else if (data.phase === 'RESULTS') {
+            showSubView('sub-results');
+            renderResults(data.players);
+        }
+        else if (data.phase === 'FINAL') {
+            switchView('view-final');
+            renderFinal(data.players);
         }
     }
 
-    function submitTopic() {
-        const topic = document.getElementById('topic-input').value;
-        if (!topic) return alert("請輸入題目");
-        
-        // 廣播給所有人，包含自己
-        if (isHost) {
-            broadcast({ type: 'START_UPLOAD', topic: topic });
-            showUploadUI(topic);
-        }
+    function submitTopicToServer() {
+        const topic = document.getElementById('topic-input').value.trim();
+        if (!topic) return;
+        if (isHost) startUploadPhase(topic);
+        else conn.send({ type: 'CLIENT_SUBMIT_TOPIC', topic: topic });
     }
 
-    function showUploadUI(topic) {
-        switchView('view-upload');
-        document.getElementById('display-topic').innerText = topic;
-        const amILeader = players[currentLeaderIndex].id === peer.id;
-        
-        if (amILeader) {
-            document.getElementById('upload-controls').classList.add('hidden');
-            document.getElementById('upload-status').innerText = "你是領袖，等待大家找照片...";
-        } else {
-            document.getElementById('upload-controls').classList.remove('hidden');
-            document.getElementById('upload-status').innerText = "快挑一張合適的照片！";
-        }
-        
-        startTimer(50, () => {
-            if (isHost) checkAllPhotosUploaded();
-        }, 'upload-timer');
+    function startUploadPhase(topic) {
+        broadcast({ type: 'GAME_STATE', phase: 'UPLOADING', topic: topic, leaderId: currentLeaderId });
+        syncGameState({ phase: 'UPLOADING', topic: topic, leaderId: currentLeaderId });
     }
 
     function processAndUpload() {
         const fileInput = document.getElementById('photo-input');
-        if (!fileInput.files[0]) return alert("請選擇一張照片");
+        if (!fileInput.files[0]) return;
 
         const reader = new FileReader();
-        reader.onload = function(e) {
+        reader.onload = (e) => {
             const img = new Image();
-            img.onload = function() {
+            img.onload = () => {
                 const canvas = document.createElement('canvas');
-                const MAX_WIDTH = 600; // 再縮小一點提升流暢度
-                let width = img.width;
-                let height = img.height;
-
-                if (width > MAX_WIDTH) {
-                    height *= MAX_WIDTH / width;
-                    width = MAX_WIDTH;
-                }
-                canvas.width = width;
-                canvas.height = height;
                 const ctx = canvas.getContext('2d');
-                ctx.drawImage(img, 0, 0, width, height);
-                const dataUrl = canvas.toDataURL('image/jpeg', 0.6);
-                
+                const scale = Math.min(500 / img.width, 500 / img.height);
+                canvas.width = img.width * scale;
+                canvas.height = img.height * scale;
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                const dataUrl = canvas.toDataURL('image/jpeg', 0.5);
+
                 if (isHost) {
                     players.find(p => p.id === peer.id).photo = dataUrl;
-                    checkAllPhotosUploaded();
+                    checkAllPhotosStatus();
                 } else {
                     conn.send({ type: 'UPLOAD_PHOTO', photo: dataUrl });
                 }
                 document.getElementById('upload-controls').classList.add('hidden');
-                document.getElementById('upload-status').innerText = "上傳完畢，等待其他人...";
+                document.getElementById('upload-msg').classList.remove('hidden');
+                document.getElementById('upload-msg').innerText = "照片已發送！";
             };
             img.src = e.target.result;
         };
         reader.readAsDataURL(fileInput.files[0]);
     }
 
-    function checkAllPhotosUploaded() {
-        const nonLeaders = players.filter(p => !p.isLeader);
-        const uploadedCount = nonLeaders.filter(p => p.photo).length;
-        
-        if (uploadedCount === nonLeaders.length) {
-            const photos = nonLeaders.map(p => ({ id: p.id, img: p.photo })).sort(() => Math.random() - 0.5);
-            broadcast({ type: 'START_VOTING', photos: photos });
-            showVotingUI(photos, players[currentLeaderIndex].id === peer.id);
+    function checkAllPhotosStatus() {
+        const others = players.filter(p => p.id !== currentLeaderId);
+        if (others.every(p => p.photo)) {
+            const photos = others.map(p => ({ id: p.id, img: p.photo })).sort(() => Math.random() - 0.5);
+            broadcast({ type: 'GAME_STATE', phase: 'VOTING', photos: photos, leaderId: currentLeaderId });
+            syncGameState({ phase: 'VOTING', photos: photos, leaderId: currentLeaderId });
         }
     }
 
-    function showVotingUI(photos, amILeader) {
-        switchView('view-voting');
+    function renderVotingGrid(photos) {
         const grid = document.getElementById('voting-grid');
         grid.innerHTML = "";
-        selectedPhotoPeerId = null;
-        
-        document.getElementById('voting-instruction').innerText = amILeader ? "你是領袖：挑一張最喜歡的 (+2分)" : "投給一張你最不喜歡的照片 (-1分)";
-        
+        let selectedId = null;
         photos.forEach(p => {
-            const div = document.createElement('div');
-            div.className = "photo-item";
-            div.innerHTML = `<img src="${p.img}" onclick="selectPhoto(this, '${p.id}')">`;
-            grid.appendChild(div);
+            const img = document.createElement('img');
+            img.src = p.img;
+            img.onclick = () => {
+                grid.querySelectorAll('img').forEach(i => i.classList.remove('selected'));
+                img.classList.add('selected');
+                window.selectedPhotoId = p.id;
+            };
+            grid.appendChild(img);
         });
-        startTimer(20, () => submitVote(), 'vote-timer');
     }
 
-    function selectPhoto(el, peerId) {
-        document.querySelectorAll('.photo-item img').forEach(i => i.classList.remove('selected'));
-        el.classList.add('selected');
-        selectedPhotoPeerId = peerId;
-    }
-
-    function submitVote() {
-        clearInterval(timerInterval);
-        const amILeader = (players[currentLeaderIndex].id === peer.id);
-        
-        const voteData = { type: 'VOTE_SUBMIT', targetId: selectedPhotoPeerId, isLeaderVote: amILeader };
-        
-        if (isHost) handleIncomingVote(voteData, peer.id);
+    function submitVoteToServer() {
+        const voteData = { type: 'VOTE_SUBMIT', targetId: window.selectedPhotoId, isLeaderVote: peer.id === currentLeaderId };
+        if (isHost) recordVote(voteData, peer.id);
         else conn.send(voteData);
-        
-        document.getElementById('view-voting').innerHTML = "<h3>投票已送出，等待結果...</h3>";
+        document.getElementById('sub-voting').innerHTML = "<h3>已送出投票，請稍候...</h3>";
     }
 
-    function handleIncomingVote(data, voterId) {
+    function recordVote(data, voterId) {
         let voter = players.find(p => p.id === voterId);
-        if (voter.voted) return; // 防止重複投票
+        if (voter.voted) return;
         voter.voted = true;
 
         if (data.isLeaderVote && data.targetId) {
-            let p = players.find(x => x.id === data.targetId);
-            if(p) p.score += 2;
+            let target = players.find(p => p.id === data.targetId);
+            if(target) target.score += 2;
         } else if (data.targetId) {
-            let p = players.find(x => x.id === data.targetId);
-            if(p) p.votes = (p.votes || 0) + 1;
+            let target = players.find(p => p.id === data.targetId);
+            if(target) target.votes += 1;
         }
 
-        const votedTotal = players.filter(p => p.voted).length;
-        if (votedTotal >= players.length) {
-            calculateNegativePoints();
-            broadcast({ type: 'ROUND_OVER', players: players.map(p => ({name: p.name, score: p.score})) });
-            showResultUI({ players: players });
-            setTimeout(() => nextRound(), 5000);
-        }
-    }
-
-    function calculateNegativePoints() {
-        const nonLeaders = players.filter(p => !p.isLeader);
-        const maxVotes = Math.max(...nonLeaders.map(p => p.votes || 0));
-        const countWithMax = nonLeaders.filter(p => p.votes === maxVotes).length;
-        
-        if (maxVotes > 0 && countWithMax === 1) {
-            let p = nonLeaders.find(p => p.votes === maxVotes);
-            p.score = Math.max(0, p.score - 1);
+        if (players.every(p => p.voted)) {
+            // 計算扣分
+            const others = players.filter(p => p.id !== currentLeaderId);
+            const maxV = Math.max(...others.map(o => o.votes));
+            const losers = others.filter(o => o.votes === maxV);
+            if (maxV > 0 && losers.length === 1) {
+                losers[0].score = Math.max(0, losers[0].score - 1);
+            }
+            broadcast({ type: 'GAME_STATE', phase: 'RESULTS', players: players.map(p => ({name: p.name, score: p.score})) });
+            syncGameState({ phase: 'RESULTS', players: players });
+            setTimeout(() => nextRound(), 6000);
         }
     }
 
-    function switchView(viewId) {
+    // --- UI Helpers ---
+    function switchView(id) {
         document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
-        document.getElementById(viewId).classList.remove('hidden');
+        document.getElementById(id).classList.remove('hidden');
     }
-
-    function updateLobbyUI(syncPlayers) {
-        const list = syncPlayers || players;
+    function showSubView(id) {
+        document.querySelectorAll('.sub-view').forEach(s => s.classList.add('hidden'));
+        document.getElementById(id).classList.remove('hidden');
+    }
+    function updateLobbyUI(pList) {
+        const list = pList || players;
         document.getElementById('player-count').innerText = list.length;
         document.getElementById('player-list').innerHTML = list.map(p => `<span class="status-badge">${p.name}</span>`).join('');
     }
-
-    function startTimer(seconds, callback, elementId) {
-        let t = seconds;
-        const el = document.getElementById(elementId);
-        if (el) el.innerText = t;
+    function startTimer(sec, callback, elId) {
+        let t = sec;
+        const el = document.getElementById(elId);
         clearInterval(timerInterval);
         timerInterval = setInterval(() => {
             t--;
-            if (el) el.innerText = t;
-            if (t <= 0) {
-                clearInterval(timerInterval);
-                callback();
-            }
+            if(el) el.innerText = t;
+            if(t <= 0) { clearInterval(timerInterval); callback(); }
         }, 1000);
     }
-
-    function showResultUI(data) {
-        switchView('view-results');
-        const list = data.players.sort((a,b) => b.score - a.score);
-        document.getElementById('round-rank').innerHTML = list.map(p => `<div><strong>${p.name}</strong>: ${p.score} 分</div>`).join('');
+    function renderResults(pList) {
+        const list = [...pList].sort((a,b) => b.score - a.score);
+        document.getElementById('round-rank').innerHTML = list.map(p => `<div>${p.name} : <span style="color:var(--primary-green)">${p.score}</span> 分</div>`).join('');
     }
-
-    function showFinalUI(finalPlayers) {
-        switchView('view-final');
-        const list = [...finalPlayers].sort((a,b) => b.score - a.score);
-        document.getElementById('final-leaderboard').innerHTML = list.map((p, i) => `<div>第 ${i+1} 名: ${p.name} (${p.score}分)</div>`).join('');
+    function renderFinal(pList) {
+        const list = [...pList].sort((a,b) => b.score - a.score);
+        document.getElementById('final-leaderboard').innerHTML = list.map((p,i) => `<h3>第 ${i+1} 名: ${p.name} (${p.score}分)</h3>`).join('');
     }
 </script>
 </body>
