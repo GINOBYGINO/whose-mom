@@ -3,12 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>誰的相簿? v0.41</title>
+    <title>誰的相簿? v0.5</title>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
         :root {
-            /* 還原 v0.3 配色 */
             --primary-color: #00b894;
             --secondary-color: #00cec9;
             --bg-grad: linear-gradient(135deg, #2d3436 0%, #000000 100%);
@@ -29,7 +28,6 @@
             flex-direction: column;
             align-items: center;
             min-height: 100vh;
-            overflow-x: hidden;
         }
 
         .container { width: 100%; max-width: 480px; padding: 15px; text-align: center; }
@@ -37,11 +35,9 @@
         .card {
             background: var(--card-bg);
             backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
             border-radius: 20px;
             padding: 20px;
             border: 1px solid rgba(255,255,255,0.15);
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
             margin-top: 15px;
             position: relative;
         }
@@ -55,63 +51,88 @@
 
         .hidden { display: none !important; }
 
-        /* 輸入組件 */
-        .input-group { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
-        input[type="text"] {
-            flex: 1; padding: 15px; background: rgba(0,0,0,0.4);
+        /* 輸入與下拉選單 */
+        input[type="text"], select {
+            width: 100%; padding: 12px; background: rgba(0,0,0,0.4);
             border: 2px solid #555; border-radius: 12px; color: white;
-            font-size: 1rem; text-align: center; outline: none;
+            font-size: 1rem; outline: none; margin-bottom: 10px;
         }
-        input[type="text"]:focus { border-color: var(--primary-color); }
         
-        .random-btn { 
-            background: #444; color: white; border: none; padding: 15px; 
-            border-radius: 12px; cursor: pointer; font-size: 1.1rem;
+        .setting-row {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 8px; font-size: 0.9rem; color: #ccc;
         }
+        .setting-row select { width: 60%; margin-bottom: 0; padding: 5px; }
 
         button.main-btn {
             width: 100%; background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
             color: #fff; border: none; padding: 15px; font-size: 1.1rem;
-            border-radius: 12px; cursor: pointer; font-weight: bold; margin-top: 10px;
-            transition: transform 0.1s;
-        }
-        button:active { transform: scale(0.98); }
-        button:disabled { opacity: 0.6; cursor: not-allowed; }
-
-        /* 房號 */
-        .room-display { font-size: 1.8rem; color: var(--accent-yellow); font-family: monospace; display: flex; align-items: center; justify-content: center; gap: 10px; margin: 10px 0; }
-        
-        /* 互動 Emoji */
-        .emoji-wall { display: flex; justify-content: center; gap: 12px; margin: 20px 0; }
-        .emoji-btn { 
-            font-size: 2rem; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
-            padding: 8px; border-radius: 12px; cursor: pointer;
+            border-radius: 12px; cursor: pointer; font-weight: bold; margin-top: 5px;
         }
 
-        /* 照片牆 */
-        .scroll-box { max-height: 50vh; overflow-y: auto; border-radius: 15px; background: rgba(0,0,0,0.2); padding: 10px; margin-bottom: 15px; }
-        .photo-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-        .photo-card { aspect-ratio: 1/1; border-radius: 12px; overflow: hidden; border: 4px solid transparent; cursor: pointer; }
-        .photo-card img { width: 100%; height: 100%; object-fit: cover; }
-        .photo-card.selected { border-color: var(--accent-yellow); }
+        /* (1) 直列清單式名單 */
+        .player-list-container {
+            text-align: left; background: rgba(0,0,0,0.2);
+            border-radius: 12px; padding: 10px; margin: 15px 0;
+        }
+        .player-row {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 8px 12px; border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        .player-row:last-child { border-bottom: none; }
+        .kick-btn {
+            background: var(--danger-red); color: white; border: none;
+            padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; cursor: pointer;
+        }
 
+        .room-display { font-size: 1.8rem; color: var(--accent-yellow); font-family: monospace; margin: 10px 0; }
         .timer { font-size: 3rem; font-weight: 800; color: var(--danger-red); margin: 5px 0; }
-        .status-pill { background: rgba(255,255,255,0.1); padding: 6px 12px; border-radius: 20px; font-size: 0.85rem; border: 1px solid rgba(255,255,255,0.2); margin: 3px; display: inline-block; }
+        .scroll-box { max-height: 45vh; overflow-y: auto; border-radius: 15px; background: rgba(0,0,0,0.2); padding: 10px; }
+        .photo-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .photo-card { aspect-ratio: 1/1; border-radius: 12px; overflow: hidden; border: 4px solid transparent; }
+        .photo-card.selected { border-color: var(--accent-yellow); }
+        .photo-card img { width: 100%; height: 100%; object-fit: cover; }
+
         .version-tag { position: fixed; bottom: 8px; right: 12px; color: #555; font-size: 0.75rem; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h1><i class="fas fa-camera-retro"></i> 誰的相簿?</h1>
+    <h1>誰的相簿?</h1>
 
     <div id="view-lobby" class="view">
         <div class="card">
-            <h3>準備開始</h3>
-            <div class="input-group">
-                <input type="text" id="player-name" placeholder="輸入暱稱" maxlength="10">
-                <button class="random-btn" onclick="randomName()"><i class="fas fa-dice"></i></button>
+            <h3>遊戲設定</h3>
+            <input type="text" id="player-name" placeholder="輸入暱稱" maxlength="10">
+            
+            <div id="host-settings-ui">
+                <div class="setting-row">
+                    <span>遊戲輪數</span>
+                    <select id="set-rounds">
+                        <option value="1">1 輪 (每人當一次領袖)</option>
+                        <option value="2" selected>2 輪 (推薦)</option>
+                        <option value="3">3 輪 (較長)</option>
+                    </select>
+                </div>
+                <div class="setting-row">
+                    <span>領袖思考時間</span>
+                    <select id="set-topic-time">
+                        <option value="15">15 秒 (極速)</option>
+                        <option value="20" selected>20 秒 (標準)</option>
+                        <option value="40">40 秒 (悠閒)</option>
+                    </select>
+                </div>
+                <div class="setting-row">
+                    <span>圖片選擇時間</span>
+                    <select id="set-upload-time">
+                        <option value="30">30 秒 (快節奏)</option>
+                        <option value="50" selected>50 秒 (標準)</option>
+                        <option value="90">90 秒 (漫長)</option>
+                    </select>
+                </div>
             </div>
+
             <button class="main-btn" id="btn-create" onclick="createRoom()">建立房間 (Host)</button>
             <div style="margin: 15px 0; opacity: 0.5;">- 或 -</div>
             <input type="text" id="room-id-input" placeholder="輸入房號 ID">
@@ -121,22 +142,17 @@
 
     <div id="view-waiting" class="view hidden">
         <div class="card">
-            <p style="margin:0; color:#aaa;">房間代碼</p>
             <div class="room-display">
                 <span id="display-room-id">...</span>
-                <i class="fas fa-copy" style="font-size:1.1rem; cursor:pointer; color:#777" onclick="copyId()"></i>
+                <i class="fas fa-copy" style="font-size:1rem; cursor:pointer; color:#777" onclick="copyId()"></i>
             </div>
-            <p>已加入 (<span id="player-count">0</span>/6)</p>
-            <div id="player-list"></div>
             
-            <div class="emoji-wall">
-                <div id="e1" class="emoji-btn" onclick="hitEmoji(1)">🌲</div>
-                <div id="e2" class="emoji-btn" onclick="hitEmoji(2)">📷</div>
-                <div id="e3" class="emoji-btn" onclick="hitEmoji(3)">🍺</div>
-            </div>
+            <div class="player-list-container" id="player-list"></div>
+            
+            <div id="settings-preview" style="font-size: 0.8rem; color: #888; margin-bottom: 10px;"></div>
 
             <button id="start-game-btn" class="main-btn hidden" onclick="hostStartGame()">開始遊戲</button>
-            <p id="waiting-msg" class="hidden" style="color:#aaa;">等待房主開始遊戲...</p>
+            <p id="waiting-msg" class="hidden">等待房主開始遊戲...</p>
         </div>
     </div>
 
@@ -148,25 +164,22 @@
                 <div class="timer" id="game-timer">--</div>
                 
                 <div id="leader-input-area" class="hidden">
-                    <input type="text" id="topic-input" placeholder="出個有趣的題目...">
+                    <input type="text" id="topic-input" placeholder="輸入題目...">
                     <button class="main-btn" onclick="submitTopic()">發布題目</button>
                 </div>
 
                 <div id="player-upload-area" class="hidden">
-                    <label for="photo-input" style="display:block; padding:20px; border:2px dashed #666; border-radius:12px; cursor:pointer; margin-bottom:15px;">
+                    <label for="photo-input" style="display:block; padding:20px; border:2px dashed #666; border-radius:12px; cursor:pointer;">
                         <i class="fas fa-image" style="font-size:2rem; color:#aaa;"></i>
                         <p>選擇照片</p>
                     </label>
                     <input type="file" id="photo-input" accept="image/*" style="display:none" onchange="previewImg(this)">
-                    <div id="p-area" style="display:none; margin-bottom:15px;">
+                    <div id="p-area" style="display:none; margin:10px 0;">
                         <img id="p-img" style="width:100px; height:100px; object-fit:cover; border-radius:10px;">
                     </div>
                     <button class="main-btn" id="btn-upload" onclick="uploadImg()">確認上傳</button>
                 </div>
-
-                <div id="wait-others-msg" class="hidden">
-                    <p><i class="fas fa-check-circle" style="color:var(--primary-color)"></i> 已完成，等其他人...</p>
-                </div>
+                <div id="wait-others-msg" class="hidden"><p>等待其他人...</p></div>
             </div>
 
             <div id="phase-voting" class="phase hidden">
@@ -180,8 +193,7 @@
 
             <div id="phase-results" class="phase hidden">
                 <h3>回合結果</h3>
-                <div id="round-scores" style="text-align:left; padding:10px;"></div>
-                <p style="color:#aaa; font-size:0.8rem; margin-top:15px;">倒數 5 秒下一局...</p>
+                <div id="round-scores" style="text-align:left;"></div>
             </div>
         </div>
     </div>
@@ -195,12 +207,9 @@
     </div>
 </div>
 
-<div class="version-tag">v0.41 | 還原配色與修復</div>
+<div class="version-tag">v0.5 | 房主管理與自定義時間</div>
 
 <script>
-    // --- (4) 名稱清單 ---
-    const funnyNames = ["淡水金城武", "大安周杰倫", "西門町最帥", "隔壁老王", "相簿收藏家", "照片戰士", "綠色小精靈", "派對之王", "路過的小明"];
-    
     let peer, conn, roomId;
     let myName = "";
     let isHost = false;
@@ -209,37 +218,34 @@
     let selectedTargetId = null;
     let timerInt;
 
-    function randomName() {
-        document.getElementById('player-name').value = funnyNames[Math.floor(Math.random()*funnyNames.length)];
-    }
+    // (4) 遊戲規則變數
+    let gameSettings = {
+        rounds: 2,
+        topicTime: 20,
+        uploadTime: 50
+    };
 
-    // --- (1) 修正建立房間邏輯 ---
     function createRoom() {
         myName = document.getElementById('player-name').value.trim();
         if(!myName) return alert("請輸入暱稱");
         
-        // 立即顯示載入感
-        document.getElementById('btn-create').innerText = "連線中...";
-        document.getElementById('btn-create').disabled = true;
-        
+        // 抓取設定
+        gameSettings.rounds = parseInt(document.getElementById('set-rounds').value);
+        gameSettings.topicTime = parseInt(document.getElementById('set-topic-time').value);
+        gameSettings.uploadTime = parseInt(document.getElementById('set-upload-time').value);
+
         peer = new Peer();
-        
         peer.on('open', id => {
             isHost = true;
             roomId = id;
             players = [{ id: id, name: myName, score: 0, photo: null, votes: 0, voted: false }];
             setupLobby();
         });
-
-        peer.on('error', err => {
-            alert("連線失敗: " + err.type);
-            document.getElementById('btn-create').innerText = "建立房間 (Host)";
-            document.getElementById('btn-create').disabled = false;
-        });
-
         peer.on('connection', c => {
             c.on('open', () => {
                 c.on('data', data => handleHostRecv(data, c));
+                // 新玩家加入，立刻同步設定
+                c.send({ type: 'SYNC_SETTINGS', settings: gameSettings });
             });
         });
     }
@@ -249,7 +255,6 @@
         let targetId = document.getElementById('room-id-input').value.trim();
         if(!myName || !targetId) return alert("請填寫名字與房號");
 
-        document.getElementById('btn-join').innerText = "連線中...";
         peer = new Peer();
         peer.on('open', id => {
             conn = peer.connect(targetId);
@@ -261,28 +266,27 @@
         });
     }
 
-    // --- Emoji 互動 ---
-    const emojiMap = ["🌲", "📷", "🍺", "🍀", "🔥", "💎", "👻", "🦄", "🌈", "🍕", "🎸"];
-    function hitEmoji(slot) {
-        if(isHost) handleEmojiLogic(slot);
-        else if(conn) conn.send({ type: 'EMOJI_HIT', slot: slot });
-    }
-    function handleEmojiLogic(slot) {
-        let nextEmoji = emojiMap[Math.floor(Math.random()*emojiMap.length)];
-        broadcast({ type: 'EMOJI_SYNC', slot: slot, emoji: nextEmoji });
-        document.getElementById('e'+slot).innerText = nextEmoji;
+    // (2) 踢人功能
+    function kickPlayer(peerId) {
+        if(!isHost) return;
+        const target = players.find(p => p.id === peerId);
+        if(target && target.conn) {
+            target.conn.send({ type: 'KICKED' });
+            setTimeout(() => target.conn.close(), 500);
+        }
+        players = players.filter(p => p.id !== peerId);
+        broadcastLobby();
+        setupLobby();
     }
 
-    // --- 訊息核心 ---
     function handleHostRecv(data, c) {
         switch(data.type) {
             case 'JOIN':
                 if(players.some(p => p.id === c.peer)) return;
                 players.push({ id: c.peer, name: data.name, score: 0, photo: null, votes: 0, voted: false, conn: c });
-                broadcast({ type: 'LOBBY_DATA', list: players.map(p => ({name:p.name})) });
+                broadcastLobby();
                 setupLobby();
                 break;
-            case 'EMOJI_HIT': handleEmojiLogic(data.slot); break;
             case 'SEND_TOPIC': startUpload(data.topic); break;
             case 'SEND_PHOTO':
                 let p = players.find(x => x.id === c.peer);
@@ -295,30 +299,37 @@
 
     function handleClientRecv(data) {
         switch(data.type) {
+            case 'KICKED': alert("你已被房主移出房間"); location.reload(); break;
+            case 'SYNC_SETTINGS': gameSettings = data.settings; break;
             case 'LOBBY_DATA': players = data.list; setupLobby(); break;
-            case 'EMOJI_SYNC': document.getElementById('e'+data.slot).innerText = data.emoji; break;
             case 'STATE_SYNC': renderState(data); break;
         }
+    }
+
+    function broadcastLobby() {
+        broadcast({ type: 'LOBBY_DATA', list: players.map(p => ({id: p.id, name: p.name})) });
     }
 
     function broadcast(msg) {
         players.forEach(p => { if(p.conn && p.conn.open) p.conn.send(msg); });
     }
 
-    // --- 遊戲邏輯 ---
+    // 遊戲核心邏輯
     function hostStartGame() {
         if(players.length < 3) return alert("至少需要 3 位玩家");
         nextRound(0);
     }
 
     function nextRound(roundIdx) {
-        const maxRounds = players.length * 2;
+        const totalLeadersCount = players.length;
+        const maxRounds = totalLeadersCount * gameSettings.rounds;
+        
         if(roundIdx >= maxRounds) {
             broadcastState('FINAL', { players: players.map(p => ({name:p.name, score:p.score})) });
             return;
         }
         players.forEach(p => { p.photo = null; p.votes = 0; p.voted = false; });
-        const leader = players[roundIdx % players.length];
+        const leader = players[roundIdx % totalLeadersCount];
         currentLeaderId = leader.id;
         broadcastState('WAIT_TOPIC', { leaderId: leader.id, leaderName: leader.name, round: roundIdx });
     }
@@ -352,9 +363,7 @@
             const others = players.filter(p => p.id !== currentLeaderId);
             const maxV = Math.max(...others.map(o => o.votes));
             if(maxV > 0) {
-                others.forEach(o => {
-                    if(o.votes === maxV) o.score = Math.max(0, o.score - 1);
-                });
+                others.forEach(o => { if(o.votes === maxV) o.score = Math.max(0, o.score - 1); });
             }
             broadcastState('RESULTS', { players: players.map(p => ({name:p.name, score:p.score})) });
             setTimeout(() => {
@@ -371,7 +380,7 @@
         broadcast(state);
     }
 
-    // --- UI 控制 ---
+    // UI 控制
     function renderState(data) {
         switchView('view-game');
         document.querySelectorAll('.phase').forEach(p => p.classList.add('hidden'));
@@ -383,17 +392,18 @@
             document.getElementById('player-upload-area').classList.add('hidden');
             document.getElementById('leader-msg').innerText = peer.id === data.leaderId ? "你是領袖" : "領袖是 " + data.leaderName;
             document.getElementById('wait-others-msg').classList.add('hidden');
+            // (3) 領袖思考倒數
+            startTimer(gameSettings.topicTime, 'game-timer');
         }
         else if(data.phase === 'UPLOADING') {
             showPhase('phase-action');
             document.getElementById('topic-display').innerText = "題目：" + data.topic;
             document.getElementById('leader-input-area').classList.add('hidden');
-            startTimer(50, 'game-timer');
+            startTimer(gameSettings.uploadTime, 'game-timer');
 
             if(peer.id === data.leaderId) {
                 document.getElementById('player-upload-area').classList.add('hidden');
                 document.getElementById('wait-others-msg').classList.remove('hidden');
-                document.getElementById('wait-others-msg').innerHTML = "<p>你是領袖，坐等照片...</p>";
             } else {
                 document.getElementById('player-upload-area').classList.remove('hidden');
                 document.getElementById('wait-others-msg').classList.add('hidden');
@@ -411,14 +421,12 @@
         else if(data.phase === 'RESULTS') {
             showPhase('phase-results');
             const html = data.players.sort((a,b)=>b.score-a.score).map(p => `
-                <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
-                    <span>${p.name}</span> <b style="color:var(--primary-color)">${p.score} 分</b>
-                </div>`).join('');
+                <div class="player-row"><span>${p.name}</span><b>${p.score} 分</b></div>`).join('');
             document.getElementById('round-scores').innerHTML = html;
         }
         else if(data.phase === 'FINAL') {
             switchView('view-final');
-            const html = data.players.sort((a,b)=>b.score-a.score).map((p,i) => `<h3>#${i+1} ${p.name} - ${p.score}分</h3>`).join('');
+            const html = data.players.sort((a,b)=>b.score-a.score).map((p,i) => `<div class="player-row"><span>#${i+1} ${p.name}</span><b>${p.score}分</b></div>`).join('');
             document.getElementById('final-list').innerHTML = html;
         }
     }
@@ -443,10 +451,8 @@
                 canvas.width = img.width * scale; canvas.height = img.height * scale;
                 ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
                 const dataUrl = canvas.toDataURL('image/jpeg', 0.6);
-                
                 if(isHost) { players.find(p=>p.id===peer.id).photo = dataUrl; checkAllUploads(); }
                 else conn.send({ type: 'SEND_PHOTO', photo: dataUrl });
-
                 document.getElementById('player-upload-area').classList.add('hidden');
                 document.getElementById('wait-others-msg').classList.remove('hidden');
             };
@@ -479,12 +485,23 @@
         document.getElementById('btn-submit-vote').classList.add('hidden');
     }
 
-    // --- 工具 ---
+    // 工具
     function setupLobby() {
         switchView('view-waiting');
         document.getElementById('display-room-id').innerText = roomId;
-        document.getElementById('player-count').innerText = players.length;
-        document.getElementById('player-list').innerHTML = players.map(p => `<span class="status-pill">${p.name}</span>`).join('');
+        
+        // (1) (2) 名單與踢人
+        const listEl = document.getElementById('player-list');
+        listEl.innerHTML = players.map(p => `
+            <div class="player-row">
+                <span>${p.name} ${p.id === roomId ? '(房主)' : ''}</span>
+                ${isHost && p.id !== peer.id ? `<button class="kick-btn" onclick="kickPlayer('${p.id}')">踢出</button>` : ''}
+            </div>
+        `).join('');
+
+        document.getElementById('settings-preview').innerText = 
+            `規則：${gameSettings.rounds}輪 | 思考${gameSettings.topicTime}s | 上傳${gameSettings.uploadTime}s`;
+
         if(isHost) document.getElementById('start-game-btn').classList.remove('hidden');
         else document.getElementById('waiting-msg').classList.remove('hidden');
     }
@@ -496,7 +513,12 @@
         el.innerText = t;
         timerInt = setInterval(() => {
             t--; el.innerText = t;
-            if(t <= 0) clearInterval(timerInt);
+            if(t <= 0) {
+                clearInterval(timerInt);
+                if(elId === 'game-timer' && document.getElementById('leader-input-area').className !== 'hidden' && !isHost) {
+                   // 領袖超時自動發送(可加)
+                }
+            }
         }, 1000);
     }
 
@@ -516,8 +538,8 @@
         document.getElementById(id).classList.remove('hidden');
     }
     function showPhase(id) { document.getElementById(id).classList.remove('hidden'); }
-    function copyId() { navigator.clipboard.writeText(roomId); alert("已複製房號！"); }
-
+    function copyId() { navigator.clipboard.writeText(roomId); alert("房號已複製！"); }
+    function randomName() { document.getElementById('player-name').value = ["相簿魔王", "自拍達人", "路過的人", "攝影大師"][Math.floor(Math.random()*4)]; }
 </script>
 </body>
 </html>
