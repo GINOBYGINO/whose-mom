@@ -3,20 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>綠色大冒險：相簿大對抗</title>
+    <title>綠色相簿趴 v0.1</title>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
         :root {
-            --primary-green: #2ecc71;
-            --dark-green: #27ae60;
-            --bg-color: #f1f8f4;
-            --text-color: #2c3e50;
+            /* 調整為更深色調 */
+            --primary-green: #27ae60;
+            --dark-green: #1b5e20;
+            --bg-color: #0a1f14; /* 深森林綠 */
+            --card-bg: #1e2d24;  /* 深灰綠卡片 */
+            --text-color: #e0e0e0;
             --accent-yellow: #f1c40f;
             --error-red: #e74c3c;
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Segoe UI', "Microsoft JhengHei", sans-serif;
             background-color: var(--bg-color);
             color: var(--text-color);
             margin: 0;
@@ -34,23 +36,28 @@
         }
 
         .card {
-            background: white;
+            background: var(--card-bg);
             border-radius: 20px;
-            padding: 20px;
-            box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
             margin-top: 20px;
-            border-bottom: 5px solid var(--dark-green);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-bottom: 5px solid var(--primary-green);
         }
 
-        h1 { color: var(--dark-green); margin-bottom: 10px; }
+        h1 { color: var(--primary-green); margin-bottom: 10px; text-shadow: 0 2px 4px rgba(0,0,0,0.3); }
+        h3 { color: var(--primary-green); }
         .hidden { display: none; }
 
-        input[type="text"], input[type="file"] {
-            width: 80%;
+        input[type="text"] {
+            width: 85%;
             padding: 12px;
             margin: 10px 0;
+            background: #2c3e50;
             border: 2px solid var(--primary-green);
             border-radius: 10px;
+            color: white;
+            font-size: 1rem;
         }
 
         button {
@@ -61,18 +68,24 @@
             font-size: 1.1rem;
             border-radius: 50px;
             cursor: pointer;
-            transition: transform 0.2s, background 0.2s;
+            transition: all 0.2s;
             margin: 5px;
+            font-weight: bold;
         }
 
-        button:hover { background-color: var(--dark-green); transform: scale(1.05); }
-        button:disabled { background-color: #ccc; }
+        button:hover { background-color: #2ecc71; transform: translateY(-2px); }
+        button:active { transform: translateY(0); }
+        button:disabled { background-color: #555; cursor: not-allowed; }
 
-        .timer { font-size: 1.5rem; font-weight: bold; color: var(--error-red); margin: 10px 0; }
+        .timer { font-size: 2rem; font-weight: bold; color: var(--accent-yellow); margin: 10px 0; }
         .photo-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; }
-        .photo-item img { width: 100%; border-radius: 10px; border: 3px solid transparent; cursor: pointer; }
-        .selected { border-color: var(--primary-green) !important; box-shadow: 0 0 10px var(--primary-green); }
-        .status-badge { background: #eee; padding: 5px 10px; border-radius: 15px; font-size: 0.8rem; margin: 2px; display: inline-block; }
+        .photo-item img { width: 100%; aspect-ratio: 1/1; object-fit: cover; border-radius: 10px; border: 3px solid transparent; cursor: pointer; }
+        .selected { border-color: var(--accent-yellow) !important; box-shadow: 0 0 15px var(--accent-yellow); }
+        
+        .status-badge { background: #2c3e50; padding: 6px 12px; border-radius: 15px; font-size: 0.9rem; margin: 4px; display: inline-block; border: 1px solid #444; }
+        
+        .version-tag { position: fixed; bottom: 10px; right: 10px; font-size: 0.8rem; color: #555; }
+        hr { border: 0; border-top: 1px solid #333; margin: 20px 0; }
     </style>
 </head>
 <body>
@@ -94,28 +107,34 @@
 
     <div id="view-waiting" class="view hidden">
         <div class="card">
-            <h3>房間代碼: <span id="display-room-id" style="color:var(--dark-green)">-</span></h3>
-            <p>已連接玩家 (<span id="player-count">0</span>/6):</p>
+            <h3>房號: <span id="display-room-id" style="color:var(--accent-yellow)">-</span></h3>
+            <p>已連線玩家 (<span id="player-count">0</span>/6):</p>
             <div id="player-list"></div>
-            <button id="start-game-btn" class="hidden" onclick="hostStartGame()">全員到齊，開始！</button>
+            <div style="margin-top: 20px;">
+                <button id="start-game-btn" class="hidden" onclick="hostStartGame()">全員到齊，開始遊戲！</button>
+            </div>
         </div>
     </div>
 
     <div id="view-leader-input" class="view hidden">
         <div class="card">
-            <h2 id="leader-msg">你是領袖，請出題</h2>
-            <input type="text" id="topic-input" placeholder="例如：最醜的照片">
+            <h2 id="leader-msg" style="color:var(--accent-yellow)">你是領袖，請出題</h2>
+            <p>讓大家去找最符合這句話的照片</p>
+            <input type="text" id="topic-input" placeholder="例如：手機裡最奇怪的照片">
+            <br>
             <button onclick="submitTopic()">發布題目</button>
         </div>
     </div>
 
     <div id="view-upload" class="view hidden">
         <div class="card">
-            <h3>題目：<span id="display-topic" style="color:var(--primary-green)"></span></h3>
+            <p>題目是：</p>
+            <h2 id="display-topic" style="color:var(--primary-green)"></h2>
             <div class="timer" id="upload-timer">50</div>
             <div id="upload-controls">
-                <input type="file" id="photo-input" accept="image/*">
-                <button onclick="processAndUpload()">確定上傳</button>
+                <input type="file" id="photo-input" accept="image/*" style="color: #ccc; margin-bottom: 10px;">
+                <br>
+                <button onclick="processAndUpload()">確定上傳照片</button>
             </div>
             <p id="upload-status">等待其他玩家...</p>
         </div>
@@ -123,35 +142,37 @@
 
     <div id="view-voting" class="view hidden">
         <div class="card">
-            <h3 id="voting-instruction">請選擇你最心儀的照片</h3>
+            <h3 id="voting-instruction" style="color:var(--accent-yellow)">投票時間</h3>
             <div class="timer" id="vote-timer">20</div>
             <div class="photo-grid" id="voting-grid"></div>
-            <button id="submit-vote-btn" onclick="submitVote()">確定投票</button>
+            <button id="submit-vote-btn" onclick="submitVote()" style="margin-top: 20px;">送出投票</button>
         </div>
     </div>
 
     <div id="view-results" class="view hidden">
         <div class="card">
-            <h3>回合結束！</h3>
-            <div id="round-rank"></div>
-            <p>等待領袖進入下一回...</p>
+            <h3>回合結果</h3>
+            <div id="round-rank" style="font-size: 1.2rem; line-height: 2;"></div>
+            <p style="color: #888; margin-top: 15px;">等待領袖進入下一回合...</p>
         </div>
     </div>
 
     <div id="view-final" class="view hidden">
         <div class="card">
-            <h2>🏆 遊戲結束 🏆</h2>
-            <div id="final-leaderboard"></div>
-            <button onclick="location.reload()">重新開始</button>
+            <h2 style="color:var(--accent-yellow)">🏆 最終排名 🏆</h2>
+            <div id="final-leaderboard" style="font-size: 1.3rem;"></div>
+            <button onclick="location.reload()" style="margin-top:20px">回首頁</button>
         </div>
     </div>
 </div>
+
+<div class="version-tag">v0.1</div>
 
 <script>
     let peer, conn, roomId;
     let myName = "";
     let isHost = false;
-    let players = []; // {id, name, score, photo, isLeader, votes: 0, peerConn}
+    let players = []; 
     let currentLeaderIndex = 0;
     let roundsPerPlayer = 2;
     let totalRounds = 0;
@@ -161,7 +182,7 @@
 
     // --- 連線邏輯 ---
     function createRoom() {
-        myName = document.getElementById('player-name').value || "無名氏";
+        myName = document.getElementById('player-name').value || "房主";
         peer = new Peer();
         peer.on('open', id => {
             isHost = true;
@@ -172,14 +193,15 @@
             switchView('view-waiting');
             document.getElementById('start-game-btn').classList.remove('hidden');
         });
-
         peer.on('connection', c => {
-            c.on('data', data => handleData(data, c));
+            c.on('open', () => {
+                c.on('data', data => handleData(data, c));
+            });
         });
     }
 
     function joinRoom() {
-        myName = document.getElementById('player-name').value || "無名氏";
+        myName = document.getElementById('player-name').value || "玩家";
         roomId = document.getElementById('room-id-input').value;
         if (!roomId) return alert("請輸入房號");
         
@@ -195,8 +217,8 @@
         });
     }
 
-    // --- 核心邏輯 ---
     function handleData(data, connection) {
+        console.log("收到訊息:", data.type);
         switch(data.type) {
             case 'JOIN':
                 if (isHost) {
@@ -209,12 +231,15 @@
                 updateLobbyUI(data.players);
                 break;
             case 'START_ROUND':
-                startRoundUI(data);
+                setupRound(data);
+                break;
+            case 'START_UPLOAD': // 修正點：Client 接收到領袖出題後的跳轉
+                showUploadUI(data.topic);
                 break;
             case 'UPLOAD_PHOTO':
                 if (isHost) {
                     let p = players.find(x => x.id === connection.peer);
-                    p.photo = data.photo;
+                    if(p) p.photo = data.photo;
                     checkAllPhotosUploaded();
                 }
                 break;
@@ -241,7 +266,7 @@
 
     // --- 遊戲流程 ---
     function hostStartGame() {
-        if (players.length < 3) return alert("至少需要 3 名玩家");
+        if (players.length < 3) return alert("至少需要 3 名玩家才能開始！");
         totalRounds = players.length * roundsPerPlayer;
         currentRound = 0;
         nextRound();
@@ -254,42 +279,66 @@
             return;
         }
         
-        players.forEach(p => { p.photo = null; p.votes = 0; p.isLeader = false; });
+        players.forEach(p => { p.photo = null; p.votes = 0; p.isLeader = false; p.voted = false; });
         currentLeaderIndex = currentRound % players.length;
         players[currentLeaderIndex].isLeader = true;
         
         let leaderId = players[currentLeaderIndex].id;
-        broadcast({ type: 'START_ROUND', leaderId: leaderId, round: currentRound + 1 });
-        startRoundUI({ leaderId: leaderId });
+        broadcast({ type: 'START_ROUND', leaderId: leaderId });
+        setupRound({ leaderId: leaderId });
         currentRound++;
     }
 
-    function startRoundUI(data) {
+    function setupRound(data) {
         const amILeader = (peer.id === data.leaderId);
-        switchView(amILeader ? 'view-leader-input' : 'view-upload');
-        document.getElementById('upload-controls').classList.remove('hidden');
-        document.getElementById('upload-status').innerText = amILeader ? "正在等待你輸入題目..." : "等待題目中...";
+        if (amILeader) {
+            switchView('view-leader-input');
+        } else {
+            switchView('view-upload');
+            document.getElementById('upload-controls').classList.add('hidden');
+            document.getElementById('upload-status').innerText = "領袖正在思考題目...";
+        }
     }
 
     function submitTopic() {
         const topic = document.getElementById('topic-input').value;
-        broadcast({ type: 'START_UPLOAD', topic: topic });
-        // Host 視角切換
-        displayTopic(topic);
+        if (!topic) return alert("請輸入題目");
+        
+        // 廣播給所有人，包含自己
+        if (isHost) {
+            broadcast({ type: 'START_UPLOAD', topic: topic });
+            showUploadUI(topic);
+        }
     }
 
-    // 圖片壓縮邏輯
+    function showUploadUI(topic) {
+        switchView('view-upload');
+        document.getElementById('display-topic').innerText = topic;
+        const amILeader = players[currentLeaderIndex].id === peer.id;
+        
+        if (amILeader) {
+            document.getElementById('upload-controls').classList.add('hidden');
+            document.getElementById('upload-status').innerText = "你是領袖，等待大家找照片...";
+        } else {
+            document.getElementById('upload-controls').classList.remove('hidden');
+            document.getElementById('upload-status').innerText = "快挑一張合適的照片！";
+        }
+        
+        startTimer(50, () => {
+            if (isHost) checkAllPhotosUploaded();
+        }, 'upload-timer');
+    }
+
     function processAndUpload() {
-        const file = document.getElementById('photo-input').value;
         const fileInput = document.getElementById('photo-input');
-        if (!fileInput.files[0]) return alert("請選擇照片");
+        if (!fileInput.files[0]) return alert("請選擇一張照片");
 
         const reader = new FileReader();
         reader.onload = function(e) {
             const img = new Image();
             img.onload = function() {
                 const canvas = document.createElement('canvas');
-                const MAX_WIDTH = 800;
+                const MAX_WIDTH = 600; // 再縮小一點提升流暢度
                 let width = img.width;
                 let height = img.height;
 
@@ -301,7 +350,7 @@
                 canvas.height = height;
                 const ctx = canvas.getContext('2d');
                 ctx.drawImage(img, 0, 0, width, height);
-                const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+                const dataUrl = canvas.toDataURL('image/jpeg', 0.6);
                 
                 if (isHost) {
                     players.find(p => p.id === peer.id).photo = dataUrl;
@@ -310,17 +359,18 @@
                     conn.send({ type: 'UPLOAD_PHOTO', photo: dataUrl });
                 }
                 document.getElementById('upload-controls').classList.add('hidden');
-                document.getElementById('upload-status').innerText = "上傳成功，等候他人...";
+                document.getElementById('upload-status').innerText = "上傳完畢，等待其他人...";
             };
             img.src = e.target.result;
         };
         reader.readAsDataURL(fileInput.files[0]);
     }
 
-    // --- 投票與計分 ---
     function checkAllPhotosUploaded() {
         const nonLeaders = players.filter(p => !p.isLeader);
-        if (nonLeaders.every(p => p.photo)) {
+        const uploadedCount = nonLeaders.filter(p => p.photo).length;
+        
+        if (uploadedCount === nonLeaders.length) {
             const photos = nonLeaders.map(p => ({ id: p.id, img: p.photo })).sort(() => Math.random() - 0.5);
             broadcast({ type: 'START_VOTING', photos: photos });
             showVotingUI(photos, players[currentLeaderIndex].id === peer.id);
@@ -331,7 +381,9 @@
         switchView('view-voting');
         const grid = document.getElementById('voting-grid');
         grid.innerHTML = "";
-        document.getElementById('voting-instruction').innerText = amILeader ? "你是領袖：選一張最喜歡的 (+2分)" : "投給一張你最不喜歡的照片 (-1分)";
+        selectedPhotoPeerId = null;
+        
+        document.getElementById('voting-instruction').innerText = amILeader ? "你是領袖：挑一張最喜歡的 (+2分)" : "投給一張你最不喜歡的照片 (-1分)";
         
         photos.forEach(p => {
             const div = document.createElement('div');
@@ -339,7 +391,7 @@
             div.innerHTML = `<img src="${p.img}" onclick="selectPhoto(this, '${p.id}')">`;
             grid.appendChild(div);
         });
-        startTimer(20, () => submitVote());
+        startTimer(20, () => submitVote(), 'vote-timer');
     }
 
     function selectPhoto(el, peerId) {
@@ -350,7 +402,8 @@
 
     function submitVote() {
         clearInterval(timerInterval);
-        const amILeader = players[currentLeaderIndex].id === peer.id;
+        const amILeader = (players[currentLeaderIndex].id === peer.id);
+        
         const voteData = { type: 'VOTE_SUBMIT', targetId: selectedPhotoPeerId, isLeaderVote: amILeader };
         
         if (isHost) handleIncomingVote(voteData, peer.id);
@@ -360,25 +413,22 @@
     }
 
     function handleIncomingVote(data, voterId) {
-        if (data.isLeaderVote) {
+        let voter = players.find(p => p.id === voterId);
+        if (voter.voted) return; // 防止重複投票
+        voter.voted = true;
+
+        if (data.isLeaderVote && data.targetId) {
             let p = players.find(x => x.id === data.targetId);
             if(p) p.score += 2;
-        } else {
+        } else if (data.targetId) {
             let p = players.find(x => x.id === data.targetId);
             if(p) p.votes = (p.votes || 0) + 1;
         }
 
-        // 檢查是否所有人都投完
-        // 總票數應等於 玩家人數 (領袖1票 + 其他玩家每人1票)
-        const totalVotesReceived = players.reduce((sum, p) => sum + (p.voted ? 1 : 0), 0);
-        // 這裡簡化邏輯：Host 算一下收到多少個 VOTE_SUBMIT
-        if (!players.votedCount) players.votedCount = 0;
-        players.votedCount++;
-
-        if (players.votedCount >= players.length) {
-            players.votedCount = 0;
+        const votedTotal = players.filter(p => p.voted).length;
+        if (votedTotal >= players.length) {
             calculateNegativePoints();
-            broadcast({ type: 'ROUND_OVER', players: players.map(p => ({name: p.name, score: p.score, photo: p.photo})) });
+            broadcast({ type: 'ROUND_OVER', players: players.map(p => ({name: p.name, score: p.score})) });
             showResultUI({ players: players });
             setTimeout(() => nextRound(), 5000);
         }
@@ -386,17 +436,15 @@
 
     function calculateNegativePoints() {
         const nonLeaders = players.filter(p => !p.isLeader);
-        const maxVotes = Math.max(...nonLeaders.map(p => p.votes));
+        const maxVotes = Math.max(...nonLeaders.map(p => p.votes || 0));
         const countWithMax = nonLeaders.filter(p => p.votes === maxVotes).length;
         
-        // 若票數相同（且不為0），不扣分。若只有一人最高票，扣1分。
         if (maxVotes > 0 && countWithMax === 1) {
             let p = nonLeaders.find(p => p.votes === maxVotes);
             p.score = Math.max(0, p.score - 1);
         }
     }
 
-    // --- UI 工具 ---
     function switchView(viewId) {
         document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
         document.getElementById(viewId).classList.remove('hidden');
@@ -408,9 +456,9 @@
         document.getElementById('player-list').innerHTML = list.map(p => `<span class="status-badge">${p.name}</span>`).join('');
     }
 
-    function startTimer(seconds, callback) {
+    function startTimer(seconds, callback, elementId) {
         let t = seconds;
-        const el = document.querySelector('.timer:not(.hidden)');
+        const el = document.getElementById(elementId);
         if (el) el.innerText = t;
         clearInterval(timerInterval);
         timerInterval = setInterval(() => {
@@ -423,26 +471,17 @@
         }, 1000);
     }
 
-    function displayTopic(topic) {
-        broadcast({ type: 'DISPLAY_TOPIC', topic: topic });
-        document.getElementById('display-topic').innerText = topic;
-        startTimer(50, () => {
-            if (isHost) checkAllPhotosUploaded();
-        });
-    }
-
     function showResultUI(data) {
         switchView('view-results');
         const list = data.players.sort((a,b) => b.score - a.score);
-        document.getElementById('round-rank').innerHTML = list.map(p => `<p>${p.name}: ${p.score}分</p>`).join('');
+        document.getElementById('round-rank').innerHTML = list.map(p => `<div><strong>${p.name}</strong>: ${p.score} 分</div>`).join('');
     }
 
     function showFinalUI(finalPlayers) {
         switchView('view-final');
         const list = [...finalPlayers].sort((a,b) => b.score - a.score);
-        document.getElementById('final-leaderboard').innerHTML = list.map((p, i) => `<h2>第${i+1}名: ${p.name} (${p.score}分)</h2>`).join('');
+        document.getElementById('final-leaderboard').innerHTML = list.map((p, i) => `<div>第 ${i+1} 名: ${p.name} (${p.score}分)</div>`).join('');
     }
-
 </script>
 </body>
 </html>
