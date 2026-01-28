@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>誰的相簿? v0.5</title>
+    <title>誰的相簿? v0.6</title>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
@@ -18,82 +18,56 @@
         }
 
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-
         body {
             font-family: 'Segoe UI', "Microsoft JhengHei", sans-serif;
-            background: var(--bg-grad);
-            color: var(--text-color);
-            margin: 0;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            min-height: 100vh;
+            background: var(--bg-grad); color: var(--text-color);
+            margin: 0; display: flex; flex-direction: column; align-items: center; min-height: 100vh; overflow-x: hidden;
         }
 
         .container { width: 100%; max-width: 480px; padding: 15px; text-align: center; }
-
         .card {
-            background: var(--card-bg);
-            backdrop-filter: blur(10px);
-            border-radius: 20px;
-            padding: 20px;
-            border: 1px solid rgba(255,255,255,0.15);
-            margin-top: 15px;
-            position: relative;
+            background: var(--card-bg); backdrop-filter: blur(12px); border-radius: 24px;
+            padding: 20px; border: 1px solid rgba(255,255,255,0.15); margin-top: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
 
-        h1 { 
-            background: linear-gradient(to right, var(--primary-color), var(--secondary-color));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            font-size: 2.2rem; margin: 10px 0; font-weight: 800;
-        }
-
+        h1 { background: linear-gradient(to right, var(--primary-color), var(--secondary-color)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-size: 2.2rem; font-weight: 800; margin: 10px 0; }
         .hidden { display: none !important; }
 
-        /* 輸入與下拉選單 */
-        input[type="text"], select {
-            width: 100%; padding: 12px; background: rgba(0,0,0,0.4);
-            border: 2px solid #555; border-radius: 12px; color: white;
-            font-size: 1rem; outline: none; margin-bottom: 10px;
-        }
+        /* 進度條 */
+        .progress-container { width: 100%; background: rgba(255,255,255,0.1); height: 8px; border-radius: 4px; margin: 10px 0; overflow: hidden; }
+        .progress-bar { height: 100%; background: var(--primary-color); width: 100%; transition: width 1s linear; }
+
+        /* 設定彈窗 */
+        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+        .modal-content { background: #333; padding: 25px; border-radius: 20px; width: 90%; max-width: 400px; text-align: left; border: 1px solid var(--primary-color); }
+
+        /* 輸入與選單 */
+        .input-group { display: flex; gap: 8px; margin-bottom: 12px; }
+        input[type="text"], select { flex: 1; padding: 12px; background: rgba(0,0,0,0.3); border: 2px solid #555; border-radius: 12px; color: white; font-size: 1rem; }
+        .dice-btn { background: #555; border: none; border-radius: 12px; color: white; padding: 0 15px; cursor: pointer; }
+
+        button.main-btn { width: 100%; background: linear-gradient(45deg, var(--primary-color), var(--secondary-color)); color: #fff; border: none; padding: 16px; font-size: 1.1rem; border-radius: 14px; cursor: pointer; font-weight: bold; margin-top: 10px; }
         
-        .setting-row {
-            display: flex; align-items: center; justify-content: space-between;
-            margin-bottom: 8px; font-size: 0.9rem; color: #ccc;
-        }
-        .setting-row select { width: 60%; margin-bottom: 0; padding: 5px; }
+        /* 名單清單 */
+        .player-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: rgba(255,255,255,0.05); border-radius: 12px; margin-bottom: 8px; border: 1px solid rgba(255,255,255,0.1); }
+        .kick-btn { background: var(--danger-red); border: none; color: white; padding: 5px 10px; border-radius: 8px; font-size: 0.8rem; }
 
-        button.main-btn {
-            width: 100%; background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
-            color: #fff; border: none; padding: 15px; font-size: 1.1rem;
-            border-radius: 12px; cursor: pointer; font-weight: bold; margin-top: 5px;
-        }
+        /* Emoji 互動 */
+        .emoji-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 15px 0; }
+        .emoji-item { background: rgba(255,255,255,0.05); padding: 10px; border-radius: 12px; font-size: 1.5rem; cursor: pointer; transition: 0.2s; }
+        .emoji-item:active { transform: scale(0.9); background: rgba(255,255,255,0.15); }
 
-        /* (1) 直列清單式名單 */
-        .player-list-container {
-            text-align: left; background: rgba(0,0,0,0.2);
-            border-radius: 12px; padding: 10px; margin: 15px 0;
-        }
-        .player-row {
-            display: flex; justify-content: space-between; align-items: center;
-            padding: 8px 12px; border-bottom: 1px solid rgba(255,255,255,0.05);
-        }
-        .player-row:last-child { border-bottom: none; }
-        .kick-btn {
-            background: var(--danger-red); color: white; border: none;
-            padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; cursor: pointer;
-        }
+        /* 開獎動畫相關 */
+        .reveal-card { position: relative; border-radius: 15px; overflow: hidden; border: 3px solid transparent; transition: 0.5s; }
+        .reveal-card.is-leader { border-color: var(--accent-yellow); box-shadow: 0 0 15px var(--accent-yellow); }
+        .reveal-card.is-most-voted { border-color: var(--danger-red); }
+        .badge { position: absolute; top: 5px; right: 5px; padding: 4px 8px; border-radius: 6px; font-size: 0.7rem; font-weight: bold; z-index: 2; }
+        .badge-leader { background: var(--accent-yellow); color: #000; }
+        .badge-most { background: var(--danger-red); color: #fff; }
+        .owner-tag { position: absolute; bottom: 0; left: 0; width: 100%; background: rgba(0,0,0,0.7); color: white; font-size: 0.8rem; padding: 4px 0; }
 
-        .room-display { font-size: 1.8rem; color: var(--accent-yellow); font-family: monospace; margin: 10px 0; }
-        .timer { font-size: 3rem; font-weight: 800; color: var(--danger-red); margin: 5px 0; }
-        .scroll-box { max-height: 45vh; overflow-y: auto; border-radius: 15px; background: rgba(0,0,0,0.2); padding: 10px; }
-        .photo-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-        .photo-card { aspect-ratio: 1/1; border-radius: 12px; overflow: hidden; border: 4px solid transparent; }
-        .photo-card.selected { border-color: var(--accent-yellow); }
-        .photo-card img { width: 100%; height: 100%; object-fit: cover; }
-
-        .version-tag { position: fixed; bottom: 8px; right: 12px; color: #555; font-size: 0.75rem; }
+        .timer-text { font-size: 2.5rem; font-weight: 800; color: var(--danger-red); margin: 0; }
+        .version-tag { position: fixed; bottom: 8px; right: 12px; color: #444; font-size: 0.7rem; }
     </style>
 </head>
 <body>
@@ -103,96 +77,109 @@
 
     <div id="view-lobby" class="view">
         <div class="card">
-            <h3>遊戲設定</h3>
-            <input type="text" id="player-name" placeholder="輸入暱稱" maxlength="10">
-            
-            <div id="host-settings-ui">
-                <div class="setting-row">
-                    <span>遊戲輪數</span>
-                    <select id="set-rounds">
-                        <option value="1">1 輪 (每人當一次領袖)</option>
-                        <option value="2" selected>2 輪 (推薦)</option>
-                        <option value="3">3 輪 (較長)</option>
-                    </select>
-                </div>
-                <div class="setting-row">
-                    <span>領袖思考時間</span>
-                    <select id="set-topic-time">
-                        <option value="15">15 秒 (極速)</option>
-                        <option value="20" selected>20 秒 (標準)</option>
-                        <option value="40">40 秒 (悠閒)</option>
-                    </select>
-                </div>
-                <div class="setting-row">
-                    <span>圖片選擇時間</span>
-                    <select id="set-upload-time">
-                        <option value="30">30 秒 (快節奏)</option>
-                        <option value="50" selected>50 秒 (標準)</option>
-                        <option value="90">90 秒 (漫長)</option>
-                    </select>
-                </div>
+            <h3>歡迎加入遊戲</h3>
+            <div class="input-group">
+                <input type="text" id="player-name" placeholder="輸入暱稱" maxlength="10">
+                <button class="dice-btn" onclick="applyRandomName()"><i class="fas fa-dice"></i></button>
             </div>
-
-            <button class="main-btn" id="btn-create" onclick="createRoom()">建立房間 (Host)</button>
+            <button class="main-btn" onclick="showSettings()">建立房間 (Host)</button>
             <div style="margin: 15px 0; opacity: 0.5;">- 或 -</div>
-            <input type="text" id="room-id-input" placeholder="輸入房號 ID">
-            <button class="main-btn" id="btn-join" onclick="joinRoom()">加入房間</button>
+            <input type="text" id="room-id-input" placeholder="貼上房號 ID" style="margin-bottom: 10px;">
+            <button class="main-btn" style="background: #444;" onclick="joinRoom()">加入房間</button>
+        </div>
+    </div>
+
+    <div id="modal-settings" class="modal hidden">
+        <div class="modal-content">
+            <h3 style="margin-top:0; color:var(--primary-color)">房間進階設定</h3>
+            <label>遊戲輪數 (每人當幾次領袖)</label>
+            <select id="set-rounds">
+                <option value="1">1 輪</option>
+                <option value="2" selected>2 輪 (推薦)</option>
+                <option value="3">3 輪</option>
+            </select>
+            <label>領袖思考時間 (秒)</label>
+            <select id="set-topic-time">
+                <option value="15">15</option>
+                <option value="20" selected>20</option>
+                <option value="40">40</option>
+            </select>
+            <label>玩家選擇照片時間 (秒)</label>
+            <select id="set-upload-time">
+                <option value="30">30</option>
+                <option value="50" selected>50</option>
+                <option value="90">90</option>
+            </select>
+            <button class="main-btn" onclick="createRoom()">完成並開啟房間</button>
+            <button class="main-btn" style="background:transparent; color:#888;" onclick="hideSettings()">取消</button>
         </div>
     </div>
 
     <div id="view-waiting" class="view hidden">
         <div class="card">
-            <div class="room-display">
-                <span id="display-room-id">...</span>
-                <i class="fas fa-copy" style="font-size:1rem; cursor:pointer; color:#777" onclick="copyId()"></i>
+            <div style="font-size:0.8rem; color:#888">房號 (點擊複製)</div>
+            <div style="font-size: 1.5rem; color: var(--accent-yellow); cursor: pointer;" onclick="copyId()" id="display-room-id">...</div>
+            
+            <div id="player-list" style="margin: 20px 0;"></div>
+            
+            <div style="border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px;">
+                <div style="font-size:0.8rem; color:#888">互動牆 (點擊同步)</div>
+                <div class="emoji-grid">
+                    <div id="e1" class="emoji-item" onclick="hitEmoji(1)">🔥</div>
+                    <div id="e2" class="emoji-item" onclick="hitEmoji(2)">😎</div>
+                    <div id="e3" class="emoji-item" onclick="hitEmoji(3)">🍺</div>
+                    <div id="e4" class="emoji-item" onclick="hitEmoji(4)">👻</div>
+                </div>
             </div>
-            
-            <div class="player-list-container" id="player-list"></div>
-            
-            <div id="settings-preview" style="font-size: 0.8rem; color: #888; margin-bottom: 10px;"></div>
 
-            <button id="start-game-btn" class="main-btn hidden" onclick="hostStartGame()">開始遊戲</button>
-            <p id="waiting-msg" class="hidden">等待房主開始遊戲...</p>
+            <button id="start-game-btn" class="main-btn hidden" onclick="hostStartGame()">全員出發</button>
+            <p id="waiting-msg" class="hidden">等待房主開始...</p>
         </div>
     </div>
 
     <div id="view-game" class="view hidden">
         <div class="card">
             <div id="phase-action" class="phase">
-                <p id="leader-msg" style="color:var(--accent-yellow)"></p>
-                <h2 id="topic-display" style="color:var(--secondary-color)">等待出題...</h2>
-                <div class="timer" id="game-timer">--</div>
+                <p id="leader-msg" style="color:var(--accent-yellow); margin-bottom:5px;"></p>
+                <h2 id="topic-display" style="color:var(--secondary-color)">等待...</h2>
+                <div class="progress-container"><div id="action-bar" class="progress-bar"></div></div>
+                <p class="timer-text" id="action-timer">--</p>
                 
                 <div id="leader-input-area" class="hidden">
-                    <input type="text" id="topic-input" placeholder="輸入題目...">
+                    <input type="text" id="topic-input" placeholder="輸入題目，如：最像上班族的動物">
                     <button class="main-btn" onclick="submitTopic()">發布題目</button>
                 </div>
 
                 <div id="player-upload-area" class="hidden">
-                    <label for="photo-input" style="display:block; padding:20px; border:2px dashed #666; border-radius:12px; cursor:pointer;">
-                        <i class="fas fa-image" style="font-size:2rem; color:#aaa;"></i>
+                    <label for="photo-input" style="display:block; padding:30px; border:2px dashed #555; border-radius:15px; cursor:pointer;">
+                        <i class="fas fa-cloud-upload-alt" style="font-size:2rem; margin-bottom:10px"></i>
                         <p>選擇照片</p>
                     </label>
                     <input type="file" id="photo-input" accept="image/*" style="display:none" onchange="previewImg(this)">
-                    <div id="p-area" style="display:none; margin:10px 0;">
-                        <img id="p-img" style="width:100px; height:100px; object-fit:cover; border-radius:10px;">
-                    </div>
+                    <div id="p-area" style="display:none; margin:15px 0;"><img id="p-img" style="width:120px; height:120px; border-radius:10px; object-fit:cover"></div>
                     <button class="main-btn" id="btn-upload" onclick="uploadImg()">確認上傳</button>
                 </div>
-                <div id="wait-others-msg" class="hidden"><p>等待其他人...</p></div>
+                <div id="wait-others-msg" class="hidden"><p><i class="fas fa-check"></i> 已準備就緒</p></div>
             </div>
 
             <div id="phase-voting" class="phase hidden">
-                <h3 id="vote-prompt" style="color:var(--accent-yellow)"></h3>
-                <div class="timer" id="vote-timer">--</div>
-                <div class="scroll-box">
+                <h3 id="vote-prompt"></h3>
+                <div class="progress-container"><div id="vote-bar" class="progress-bar"></div></div>
+                <p class="timer-text" id="vote-timer">--</p>
+                <div style="max-height: 45vh; overflow-y: auto; background: rgba(0,0,0,0.2); border-radius: 15px; padding: 10px;">
                     <div class="photo-grid" id="voting-grid"></div>
                 </div>
-                <button class="main-btn" id="btn-submit-vote" onclick="confirmVote()" disabled>確認投票</button>
+                <button class="main-btn" id="btn-submit-vote" onclick="confirmVote()" disabled>確定投票</button>
+            </div>
+
+            <div id="phase-reveal" class="phase hidden">
+                <h3 style="color:var(--accent-yellow)">揭曉結果</h3>
+                <div class="photo-grid" id="reveal-grid"></div>
+                <p style="margin-top:15px; font-size:0.9rem; color:#888;">正在計算得分...</p>
             </div>
 
             <div id="phase-results" class="phase hidden">
-                <h3>回合結果</h3>
+                <h3>回合積分榜</h3>
                 <div id="round-scores" style="text-align:left;"></div>
             </div>
         </div>
@@ -201,15 +188,18 @@
     <div id="view-final" class="view hidden">
         <div class="card">
             <h2 style="color:var(--accent-yellow)">🏆 遊戲結束 🏆</h2>
-            <div id="final-list" style="text-align:left; margin-bottom:20px;"></div>
+            <div id="final-list" style="text-align:left;"></div>
             <button class="main-btn" onclick="location.reload()">回首頁</button>
         </div>
     </div>
 </div>
 
-<div class="version-tag">v0.5 | 房主管理與自定義時間</div>
+<div class="version-tag">v0.6 | 揭曉動畫與進度條</div>
 
 <script>
+    // --- (5) 隨機名稱清單 ---
+    const funnyNames = ["台北林克", "相簿獵人", "自拍高手", "深夜攝影師", "迷路的小豬", "西門吹雪", "路邊的老王", "草莓布丁", "神秘嘉賓"];
+    
     let peer, conn, roomId;
     let myName = "";
     let isHost = false;
@@ -217,34 +207,37 @@
     let currentLeaderId = "";
     let selectedTargetId = null;
     let timerInt;
+    let gameSettings = { rounds: 2, topicTime: 20, uploadTime: 50 };
 
-    // (4) 遊戲規則變數
-    let gameSettings = {
-        rounds: 2,
-        topicTime: 20,
-        uploadTime: 50
-    };
+    // 初始化隨機名字
+    window.onload = () => { applyRandomName(); };
+    function applyRandomName() {
+        document.getElementById('player-name').value = funnyNames[Math.floor(Math.random() * funnyNames.length)];
+    }
 
-    function createRoom() {
+    // --- 設定與房主流程 ---
+    function showSettings() {
         myName = document.getElementById('player-name').value.trim();
         if(!myName) return alert("請輸入暱稱");
-        
-        // 抓取設定
+        document.getElementById('modal-settings').classList.remove('hidden');
+    }
+    function hideSettings() { document.getElementById('modal-settings').classList.add('hidden'); }
+
+    function createRoom() {
         gameSettings.rounds = parseInt(document.getElementById('set-rounds').value);
         gameSettings.topicTime = parseInt(document.getElementById('set-topic-time').value);
         gameSettings.uploadTime = parseInt(document.getElementById('set-upload-time').value);
-
+        hideSettings();
+        
         peer = new Peer();
         peer.on('open', id => {
-            isHost = true;
-            roomId = id;
+            isHost = true; roomId = id;
             players = [{ id: id, name: myName, score: 0, photo: null, votes: 0, voted: false }];
             setupLobby();
         });
         peer.on('connection', c => {
             c.on('open', () => {
                 c.on('data', data => handleHostRecv(data, c));
-                // 新玩家加入，立刻同步設定
                 c.send({ type: 'SYNC_SETTINGS', settings: gameSettings });
             });
         });
@@ -254,7 +247,6 @@
         myName = document.getElementById('player-name').value.trim();
         let targetId = document.getElementById('room-id-input').value.trim();
         if(!myName || !targetId) return alert("請填寫名字與房號");
-
         peer = new Peer();
         peer.on('open', id => {
             conn = peer.connect(targetId);
@@ -266,7 +258,18 @@
         });
     }
 
-    // (2) 踢人功能
+    // --- Emoji 同步 ---
+    const emojiPool = ["🔥", "😎", "🍺", "👻", "💎", "🌈", "🍕", "🚀", "🦄", "🎸", "🍦"];
+    function hitEmoji(slot) {
+        if(isHost) handleEmojiLogic(slot);
+        else if(conn) conn.send({ type: 'EMOJI_HIT', slot: slot });
+    }
+    function handleEmojiLogic(slot) {
+        let next = emojiPool[Math.floor(Math.random()*emojiPool.length)];
+        broadcast({ type: 'EMOJI_SYNC', slot: slot, emoji: next });
+        document.getElementById('e'+slot).innerText = next;
+    }
+
     function kickPlayer(peerId) {
         if(!isHost) return;
         const target = players.find(p => p.id === peerId);
@@ -275,18 +278,18 @@
             setTimeout(() => target.conn.close(), 500);
         }
         players = players.filter(p => p.id !== peerId);
-        broadcastLobby();
-        setupLobby();
+        broadcastLobby(); setupLobby();
     }
 
+    // --- 訊息核心 ---
     function handleHostRecv(data, c) {
         switch(data.type) {
             case 'JOIN':
                 if(players.some(p => p.id === c.peer)) return;
                 players.push({ id: c.peer, name: data.name, score: 0, photo: null, votes: 0, voted: false, conn: c });
-                broadcastLobby();
-                setupLobby();
+                broadcastLobby(); setupLobby();
                 break;
+            case 'EMOJI_HIT': handleEmojiLogic(data.slot); break;
             case 'SEND_TOPIC': startUpload(data.topic); break;
             case 'SEND_PHOTO':
                 let p = players.find(x => x.id === c.peer);
@@ -299,49 +302,41 @@
 
     function handleClientRecv(data) {
         switch(data.type) {
-            case 'KICKED': alert("你已被房主移出房間"); location.reload(); break;
+            case 'KICKED': alert("你已被移出房間"); location.reload(); break;
             case 'SYNC_SETTINGS': gameSettings = data.settings; break;
             case 'LOBBY_DATA': players = data.list; setupLobby(); break;
+            case 'EMOJI_SYNC': document.getElementById('e'+data.slot).innerText = data.emoji; break;
             case 'STATE_SYNC': renderState(data); break;
         }
     }
 
-    function broadcastLobby() {
-        broadcast({ type: 'LOBBY_DATA', list: players.map(p => ({id: p.id, name: p.name})) });
-    }
+    function broadcastLobby() { broadcast({ type: 'LOBBY_DATA', list: players.map(p => ({id: p.id, name: p.name})) }); }
+    function broadcast(msg) { players.forEach(p => { if(p.conn && p.conn.open) p.conn.send(msg); }); }
 
-    function broadcast(msg) {
-        players.forEach(p => { if(p.conn && p.conn.open) p.conn.send(msg); });
-    }
-
-    // 遊戲核心邏輯
+    // --- 遊戲邏輯 ---
     function hostStartGame() {
-        if(players.length < 3) return alert("至少需要 3 位玩家");
+        if(players.length < 3) return alert("至少需 3 人");
         nextRound(0);
     }
 
     function nextRound(roundIdx) {
-        const totalLeadersCount = players.length;
-        const maxRounds = totalLeadersCount * gameSettings.rounds;
-        
-        if(roundIdx >= maxRounds) {
+        const maxR = players.length * gameSettings.rounds;
+        if(roundIdx >= maxR) {
             broadcastState('FINAL', { players: players.map(p => ({name:p.name, score:p.score})) });
             return;
         }
-        players.forEach(p => { p.photo = null; p.votes = 0; p.voted = false; });
-        const leader = players[roundIdx % totalLeadersCount];
+        players.forEach(p => { p.photo = null; p.votes = 0; p.voted = false; p.pickedByLeader = false; });
+        const leader = players[roundIdx % players.length];
         currentLeaderId = leader.id;
         broadcastState('WAIT_TOPIC', { leaderId: leader.id, leaderName: leader.name, round: roundIdx });
     }
 
-    function startUpload(topic) {
-        broadcastState('UPLOADING', { topic: topic, leaderId: currentLeaderId });
-    }
+    function startUpload(topic) { broadcastState('UPLOADING', { topic: topic, leaderId: currentLeaderId }); }
 
     function checkAllUploads() {
-        const uploaders = players.filter(p => p.id !== currentLeaderId);
-        if(uploaders.every(p => p.photo)) {
-            const pool = uploaders.map(p => ({id: p.id, img: p.photo})).sort(() => Math.random() - 0.5);
+        const ups = players.filter(p => p.id !== currentLeaderId);
+        if(ups.every(p => p.photo)) {
+            const pool = ups.map(p => ({id: p.id, img: p.photo})).sort(() => Math.random() - 0.5);
             broadcastState('VOTING', { photos: pool, leaderId: currentLeaderId });
         }
     }
@@ -351,11 +346,10 @@
         if(!voter || voter.voted) return;
         voter.voted = true;
 
+        let target = players.find(p => p.id === tId);
         if(vId === currentLeaderId) {
-            let target = players.find(p => p.id === tId);
-            if(target) target.score += 2;
+            if(target) { target.score += 2; target.pickedByLeader = true; }
         } else {
-            let target = players.find(p => p.id === tId);
             if(target) target.votes += 1;
         }
 
@@ -365,11 +359,20 @@
             if(maxV > 0) {
                 others.forEach(o => { if(o.votes === maxV) o.score = Math.max(0, o.score - 1); });
             }
-            broadcastState('RESULTS', { players: players.map(p => ({name:p.name, score:p.score})) });
+            
+            // --- (6) 先進入揭曉階段 ---
+            const revealData = players.filter(p => p.id !== currentLeaderId).map(p => ({
+                name: p.name, photo: p.photo, votes: p.votes, isLeaderPick: p.pickedByLeader, isMostVoted: (p.votes === maxV && maxV > 0)
+            }));
+            broadcastState('REVEAL', { list: revealData });
+            
             setTimeout(() => {
-                let currentR = parseInt(document.body.dataset.round || 0);
-                nextRound(currentR + 1);
-            }, 5000);
+                broadcastState('RESULTS', { players: players.map(p => ({name:p.name, score:p.score})) });
+                setTimeout(() => {
+                    let curR = parseInt(document.body.dataset.round || 0);
+                    nextRound(curR + 1);
+                }, 4000);
+            }, 6000); // 揭曉停留 6 秒
         }
     }
 
@@ -380,7 +383,7 @@
         broadcast(state);
     }
 
-    // UI 控制
+    // --- UI 與進度條 ---
     function renderState(data) {
         switchView('view-game');
         document.querySelectorAll('.phase').forEach(p => p.classList.add('hidden'));
@@ -390,17 +393,15 @@
             document.getElementById('topic-display').innerText = "領袖正在思考題目...";
             document.getElementById('leader-input-area').classList.toggle('hidden', peer.id !== data.leaderId);
             document.getElementById('player-upload-area').classList.add('hidden');
-            document.getElementById('leader-msg').innerText = peer.id === data.leaderId ? "你是領袖" : "領袖是 " + data.leaderName;
+            document.getElementById('leader-msg').innerText = peer.id === data.leaderId ? "你是領袖" : "領袖：" + data.leaderName;
             document.getElementById('wait-others-msg').classList.add('hidden');
-            // (3) 領袖思考倒數
-            startTimer(gameSettings.topicTime, 'game-timer');
+            startTimer(gameSettings.topicTime, 'action-timer', 'action-bar');
         }
         else if(data.phase === 'UPLOADING') {
             showPhase('phase-action');
-            document.getElementById('topic-display').innerText = "題目：" + data.topic;
+            document.getElementById('topic-display').innerText = data.topic;
             document.getElementById('leader-input-area').classList.add('hidden');
-            startTimer(gameSettings.uploadTime, 'game-timer');
-
+            startTimer(gameSettings.uploadTime, 'action-timer', 'action-bar');
             if(peer.id === data.leaderId) {
                 document.getElementById('player-upload-area').classList.add('hidden');
                 document.getElementById('wait-others-msg').classList.remove('hidden');
@@ -412,11 +413,15 @@
         }
         else if(data.phase === 'VOTING') {
             showPhase('phase-voting');
-            startTimer(20, 'vote-timer');
-            document.getElementById('vote-prompt').innerText = (peer.id === data.leaderId) ? "投最喜歡的 (+2分)" : "投最討厭的 (-1分)";
+            startTimer(20, 'vote-timer', 'vote-bar');
+            document.getElementById('vote-prompt').innerText = (peer.id === data.leaderId) ? "選擇最符合的 (+2分)" : "選擇最不符合的 (-1分)";
             renderGrid(data.photos);
             document.getElementById('btn-submit-vote').disabled = true;
             document.getElementById('btn-submit-vote').classList.remove('hidden');
+        }
+        else if(data.phase === 'REVEAL') {
+            showPhase('phase-reveal');
+            renderReveal(data.list);
         }
         else if(data.phase === 'RESULTS') {
             showPhase('phase-results');
@@ -431,11 +436,66 @@
         }
     }
 
+    function startTimer(sec, textId, barId) {
+        let t = sec;
+        const textEl = document.getElementById(textId);
+        const barEl = document.getElementById(barId);
+        clearInterval(timerInt);
+        textEl.innerText = t;
+        barEl.style.transition = 'none';
+        barEl.style.width = '100%';
+        setTimeout(() => {
+            barEl.style.transition = `width ${sec}s linear`;
+            barEl.style.width = '0%';
+        }, 50);
+        timerInt = setInterval(() => {
+            t--; textEl.innerText = t;
+            if(t <= 0) clearInterval(timerInt);
+        }, 1000);
+    }
+
+    function renderGrid(photos) {
+        const grid = document.getElementById('voting-grid'); grid.innerHTML = "";
+        photos.forEach(p => {
+            const div = document.createElement('div'); div.className = "photo-card";
+            div.style = "aspect-ratio:1/1; overflow:hidden; border-radius:12px; border:4px solid transparent;";
+            div.innerHTML = `<img src="${p.img}" style="width:100%; height:100%; object-fit:cover">`;
+            div.onclick = () => {
+                document.querySelectorAll('.photo-card').forEach(c => c.style.borderColor = 'transparent');
+                div.style.borderColor = 'var(--accent-yellow)';
+                selectedTargetId = p.id;
+                document.getElementById('btn-submit-vote').disabled = false;
+            };
+            grid.appendChild(div);
+        });
+    }
+
+    function renderReveal(list) {
+        const grid = document.getElementById('reveal-grid'); grid.innerHTML = "";
+        list.forEach((item, idx) => {
+            const div = document.createElement('div');
+            div.className = `reveal-card ${item.isLeaderPick ? 'is-leader' : ''} ${item.isMostVoted ? 'is-most-voted' : ''}`;
+            div.style.opacity = "0";
+            div.style.transform = "translateY(20px)";
+            div.innerHTML = `
+                <img src="${item.photo}" style="width:100%; aspect-ratio:1/1; object-fit:cover;">
+                <div class="owner-tag">${item.name}</div>
+                ${item.isLeaderPick ? '<div class="badge badge-leader">領袖最愛</div>' : ''}
+                ${item.isMostVoted ? '<div class="badge badge-most">最不符合</div>' : ''}
+            `;
+            grid.appendChild(div);
+            // 逐一顯示動畫
+            setTimeout(() => {
+                div.style.opacity = "1";
+                div.style.transform = "translateY(0)";
+            }, idx * 800);
+        });
+    }
+
     function submitTopic() {
-        const topic = document.getElementById('topic-input').value.trim();
-        if(!topic) return;
-        if(isHost) startUpload(topic);
-        else conn.send({ type: 'SEND_TOPIC', topic: topic });
+        const t = document.getElementById('topic-input').value.trim();
+        if(!t) return;
+        if(isHost) startUpload(t); else conn.send({ type: 'SEND_TOPIC', topic: t });
     }
 
     function uploadImg() {
@@ -445,8 +505,7 @@
         reader.onload = e => {
             const img = new Image();
             img.onload = () => {
-                const canvas = document.createElement('canvas');
-                const ctx = canvas.getContext('2d');
+                const canvas = document.createElement('canvas'); const ctx = canvas.getContext('2d');
                 const scale = Math.min(500/img.width, 500/img.height);
                 canvas.width = img.width * scale; canvas.height = img.height * scale;
                 ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
@@ -461,85 +520,35 @@
         reader.readAsDataURL(file);
     }
 
-    function renderGrid(photos) {
-        const grid = document.getElementById('voting-grid');
-        grid.innerHTML = "";
-        photos.forEach(p => {
-            const div = document.createElement('div');
-            div.className = "photo-card";
-            div.innerHTML = `<img src="${p.img}">`;
-            div.onclick = () => {
-                document.querySelectorAll('.photo-card').forEach(c => c.classList.remove('selected'));
-                div.classList.add('selected');
-                selectedTargetId = p.id;
-                document.getElementById('btn-submit-vote').disabled = false;
-            };
-            grid.appendChild(div);
-        });
-    }
-
     function confirmVote() {
         if(!selectedTargetId) return;
-        if(isHost) recordVote(peer.id, selectedTargetId);
-        else conn.send({ type: 'SEND_VOTE', targetId: selectedTargetId });
+        if(isHost) recordVote(peer.id, selectedTargetId); else conn.send({ type: 'SEND_VOTE', targetId: selectedTargetId });
         document.getElementById('btn-submit-vote').classList.add('hidden');
     }
 
-    // 工具
     function setupLobby() {
         switchView('view-waiting');
         document.getElementById('display-room-id').innerText = roomId;
-        
-        // (1) (2) 名單與踢人
         const listEl = document.getElementById('player-list');
         listEl.innerHTML = players.map(p => `
             <div class="player-row">
-                <span>${p.name} ${p.id === roomId ? '(房主)' : ''}</span>
+                <span>${p.name} ${p.id === roomId ? '👑' : ''}</span>
                 ${isHost && p.id !== peer.id ? `<button class="kick-btn" onclick="kickPlayer('${p.id}')">踢出</button>` : ''}
-            </div>
-        `).join('');
-
-        document.getElementById('settings-preview').innerText = 
-            `規則：${gameSettings.rounds}輪 | 思考${gameSettings.topicTime}s | 上傳${gameSettings.uploadTime}s`;
-
+            </div>`).join('');
         if(isHost) document.getElementById('start-game-btn').classList.remove('hidden');
         else document.getElementById('waiting-msg').classList.remove('hidden');
     }
 
-    function startTimer(sec, elId) {
-        let t = sec;
-        const el = document.getElementById(elId);
-        clearInterval(timerInt);
-        el.innerText = t;
-        timerInt = setInterval(() => {
-            t--; el.innerText = t;
-            if(t <= 0) {
-                clearInterval(timerInt);
-                if(elId === 'game-timer' && document.getElementById('leader-input-area').className !== 'hidden' && !isHost) {
-                   // 領袖超時自動發送(可加)
-                }
-            }
-        }, 1000);
-    }
-
+    function copyId() { navigator.clipboard.writeText(roomId); alert("房號已複製！"); }
+    function switchView(id) { document.querySelectorAll('.view').forEach(v => v.classList.add('hidden')); document.getElementById(id).classList.remove('hidden'); }
+    function showPhase(id) { document.getElementById(id).classList.remove('hidden'); }
     function previewImg(input) {
         if(input.files && input.files[0]) {
             const reader = new FileReader();
-            reader.onload = e => {
-                document.getElementById('p-img').src = e.target.result;
-                document.getElementById('p-area').style.display = 'block';
-            };
+            reader.onload = e => { document.getElementById('p-img').src = e.target.result; document.getElementById('p-area').style.display = 'block'; };
             reader.readAsDataURL(input.files[0]);
         }
     }
-
-    function switchView(id) {
-        document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
-        document.getElementById(id).classList.remove('hidden');
-    }
-    function showPhase(id) { document.getElementById(id).classList.remove('hidden'); }
-    function copyId() { navigator.clipboard.writeText(roomId); alert("房號已複製！"); }
-    function randomName() { document.getElementById('player-name').value = ["相簿魔王", "自拍達人", "路過的人", "攝影大師"][Math.floor(Math.random()*4)]; }
 </script>
 </body>
 </html>
