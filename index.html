@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>綠色大冒險：相簿大對抗</title>
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <style>
+        :root {
+            --primary-green: #2ecc71;
+            --dark-green: #27ae60;
+            --bg-color: #f1f8f4;
+            --text-color: #2c3e50;
+            --accent-yellow: #f1c40f;
+            --error-red: #e74c3c;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            width: 90%;
+            max-width: 500px;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .card {
+            background: white;
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+            margin-top: 20px;
+            border-bottom: 5px solid var(--dark-green);
+        }
+
+        h1 { color: var(--dark-green); margin-bottom: 10px; }
+        .hidden { display: none; }
+
+        input[type="text"], input[type="file"] {
+            width: 80%;
+            padding: 12px;
+            margin: 10px 0;
+            border: 2px solid var(--primary-green);
+            border-radius: 10px;
+        }
+
+        button {
+            background-color: var(--primary-green);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 1.1rem;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: transform 0.2s, background 0.2s;
+            margin: 5px;
+        }
+
+        button:hover { background-color: var(--dark-green); transform: scale(1.05); }
+        button:disabled { background-color: #ccc; }
+
+        .timer { font-size: 1.5rem; font-weight: bold; color: var(--error-red); margin: 10px 0; }
+        .photo-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; }
+        .photo-item img { width: 100%; border-radius: 10px; border: 3px solid transparent; cursor: pointer; }
+        .selected { border-color: var(--primary-green) !important; box-shadow: 0 0 10px var(--primary-green); }
+        .status-badge { background: #eee; padding: 5px 10px; border-radius: 15px; font-size: 0.8rem; margin: 2px; display: inline-block; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>🍀 綠色相簿趴</h1>
+    
+    <div id="view-lobby" class="view">
+        <div class="card">
+            <h3>準備開始</h3>
+            <input type="text" id="player-name" placeholder="輸入你的暱稱">
+            <br>
+            <button onclick="createRoom()">建立房間 (Host)</button>
+            <hr>
+            <input type="text" id="room-id-input" placeholder="輸入房號">
+            <button onclick="joinRoom()">加入房間</button>
+        </div>
+    </div>
+
+    <div id="view-waiting" class="view hidden">
+        <div class="card">
+            <h3>房間代碼: <span id="display-room-id" style="color:var(--dark-green)">-</span></h3>
+            <p>已連接玩家 (<span id="player-count">0</span>/6):</p>
+            <div id="player-list"></div>
+            <button id="start-game-btn" class="hidden" onclick="hostStartGame()">全員到齊，開始！</button>
+        </div>
+    </div>
+
+    <div id="view-leader-input" class="view hidden">
+        <div class="card">
+            <h2 id="leader-msg">你是領袖，請出題</h2>
+            <input type="text" id="topic-input" placeholder="例如：最醜的照片">
+            <button onclick="submitTopic()">發布題目</button>
+        </div>
+    </div>
+
+    <div id="view-upload" class="view hidden">
+        <div class="card">
+            <h3>題目：<span id="display-topic" style="color:var(--primary-green)"></span></h3>
+            <div class="timer" id="upload-timer">50</div>
+            <div id="upload-controls">
+                <input type="file" id="photo-input" accept="image/*">
+                <button onclick="processAndUpload()">確定上傳</button>
+            </div>
+            <p id="upload-status">等待其他玩家...</p>
+        </div>
+    </div>
+
+    <div id="view-voting" class="view hidden">
+        <div class="card">
+            <h3 id="voting-instruction">請選擇你最心儀的照片</h3>
+            <div class="timer" id="vote-timer">20</div>
+            <div class="photo-grid" id="voting-grid"></div>
+            <button id="submit-vote-btn" onclick="submitVote()">確定投票</button>
+        </div>
+    </div>
+
+    <div id="view-results" class="view hidden">
+        <div class="card">
+            <h3>回合結束！</h3>
+            <div id="round-rank"></div>
+            <p>等待領袖進入下一回...</p>
+        </div>
+    </div>
+
+    <div id="view-final" class="view hidden">
+        <div class="card">
+            <h2>🏆 遊戲結束 🏆</h2>
+            <div id="final-leaderboard"></div>
+            <button onclick="location.reload()">重新開始</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    let peer, conn, roomId;
+    let myName = "";
+    let isHost = false;
+    let players = []; // {id, name, score, photo, isLeader, votes: 0, peerConn}
+    let currentLeaderIndex = 0;
+    let roundsPerPlayer = 2;
+    let totalRounds = 0;
+    let currentRound = 0;
+    let selectedPhotoPeerId = null;
+    let timerInterval;
+
+    // --- 連線邏輯 ---
+    function createRoom() {
+        myName = document.getElementById('player-name').value || "無名氏";
+        peer = new Peer();
+        peer.on('open', id => {
+            isHost = true;
+            roomId = id;
+            document.getElementById('display-room-id').innerText = id;
+            players.push({ id: id, name: myName, score: 0, isLeader: false });
+            updateLobbyUI();
+            switchView('view-waiting');
+            document.getElementById('start-game-btn').classList.remove('hidden');
+        });
+
+        peer.on('connection', c => {
+            c.on('data', data => handleData(data, c));
+        });
+    }
+
+    function joinRoom() {
+        myName = document.getElementById('player-name').value || "無名氏";
+        roomId = document.getElementById('room-id-input').value;
+        if (!roomId) return alert("請輸入房號");
+        
+        peer = new Peer();
+        peer.on('open', id => {
+            conn = peer.connect(roomId);
+            conn.on('open', () => {
+                conn.send({ type: 'JOIN', name: myName });
+                switchView('view-waiting');
+                document.getElementById('display-room-id').innerText = roomId;
+            });
+            conn.on('data', data => handleData(data));
+        });
+    }
+
+    // --- 核心邏輯 ---
+    function handleData(data, connection) {
+        switch(data.type) {
+            case 'JOIN':
+                if (isHost) {
+                    players.push({ id: connection.peer, name: data.name, score: 0, isLeader: false, peerConn: connection });
+                    broadcast({ type: 'SYNC_PLAYERS', players: players.map(p => ({name: p.name, score: p.score})) });
+                    updateLobbyUI();
+                }
+                break;
+            case 'SYNC_PLAYERS':
+                updateLobbyUI(data.players);
+                break;
+            case 'START_ROUND':
+                startRoundUI(data);
+                break;
+            case 'UPLOAD_PHOTO':
+                if (isHost) {
+                    let p = players.find(x => x.id === connection.peer);
+                    p.photo = data.photo;
+                    checkAllPhotosUploaded();
+                }
+                break;
+            case 'START_VOTING':
+                showVotingUI(data.photos, data.isLeader);
+                break;
+            case 'VOTE_SUBMIT':
+                if (isHost) handleIncomingVote(data, connection.peer);
+                break;
+            case 'ROUND_OVER':
+                showResultUI(data);
+                break;
+            case 'GAME_OVER':
+                showFinalUI(data.players);
+                break;
+        }
+    }
+
+    function broadcast(data) {
+        players.forEach(p => {
+            if (p.peerConn) p.peerConn.send(data);
+        });
+    }
+
+    // --- 遊戲流程 ---
+    function hostStartGame() {
+        if (players.length < 3) return alert("至少需要 3 名玩家");
+        totalRounds = players.length * roundsPerPlayer;
+        currentRound = 0;
+        nextRound();
+    }
+
+    function nextRound() {
+        if (currentRound >= totalRounds) {
+            broadcast({ type: 'GAME_OVER', players: players });
+            showFinalUI(players);
+            return;
+        }
+        
+        players.forEach(p => { p.photo = null; p.votes = 0; p.isLeader = false; });
+        currentLeaderIndex = currentRound % players.length;
+        players[currentLeaderIndex].isLeader = true;
+        
+        let leaderId = players[currentLeaderIndex].id;
+        broadcast({ type: 'START_ROUND', leaderId: leaderId, round: currentRound + 1 });
+        startRoundUI({ leaderId: leaderId });
+        currentRound++;
+    }
+
+    function startRoundUI(data) {
+        const amILeader = (peer.id === data.leaderId);
+        switchView(amILeader ? 'view-leader-input' : 'view-upload');
+        document.getElementById('upload-controls').classList.remove('hidden');
+        document.getElementById('upload-status').innerText = amILeader ? "正在等待你輸入題目..." : "等待題目中...";
+    }
+
+    function submitTopic() {
+        const topic = document.getElementById('topic-input').value;
+        broadcast({ type: 'START_UPLOAD', topic: topic });
+        // Host 視角切換
+        displayTopic(topic);
+    }
+
+    // 圖片壓縮邏輯
+    function processAndUpload() {
+        const file = document.getElementById('photo-input').value;
+        const fileInput = document.getElementById('photo-input');
+        if (!fileInput.files[0]) return alert("請選擇照片");
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const img = new Image();
+            img.onload = function() {
+                const canvas = document.createElement('canvas');
+                const MAX_WIDTH = 800;
+                let width = img.width;
+                let height = img.height;
+
+                if (width > MAX_WIDTH) {
+                    height *= MAX_WIDTH / width;
+                    width = MAX_WIDTH;
+                }
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+                const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+                
+                if (isHost) {
+                    players.find(p => p.id === peer.id).photo = dataUrl;
+                    checkAllPhotosUploaded();
+                } else {
+                    conn.send({ type: 'UPLOAD_PHOTO', photo: dataUrl });
+                }
+                document.getElementById('upload-controls').classList.add('hidden');
+                document.getElementById('upload-status').innerText = "上傳成功，等候他人...";
+            };
+            img.src = e.target.result;
+        };
+        reader.readAsDataURL(fileInput.files[0]);
+    }
+
+    // --- 投票與計分 ---
+    function checkAllPhotosUploaded() {
+        const nonLeaders = players.filter(p => !p.isLeader);
+        if (nonLeaders.every(p => p.photo)) {
+            const photos = nonLeaders.map(p => ({ id: p.id, img: p.photo })).sort(() => Math.random() - 0.5);
+            broadcast({ type: 'START_VOTING', photos: photos });
+            showVotingUI(photos, players[currentLeaderIndex].id === peer.id);
+        }
+    }
+
+    function showVotingUI(photos, amILeader) {
+        switchView('view-voting');
+        const grid = document.getElementById('voting-grid');
+        grid.innerHTML = "";
+        document.getElementById('voting-instruction').innerText = amILeader ? "你是領袖：選一張最喜歡的 (+2分)" : "投給一張你最不喜歡的照片 (-1分)";
+        
+        photos.forEach(p => {
+            const div = document.createElement('div');
+            div.className = "photo-item";
+            div.innerHTML = `<img src="${p.img}" onclick="selectPhoto(this, '${p.id}')">`;
+            grid.appendChild(div);
+        });
+        startTimer(20, () => submitVote());
+    }
+
+    function selectPhoto(el, peerId) {
+        document.querySelectorAll('.photo-item img').forEach(i => i.classList.remove('selected'));
+        el.classList.add('selected');
+        selectedPhotoPeerId = peerId;
+    }
+
+    function submitVote() {
+        clearInterval(timerInterval);
+        const amILeader = players[currentLeaderIndex].id === peer.id;
+        const voteData = { type: 'VOTE_SUBMIT', targetId: selectedPhotoPeerId, isLeaderVote: amILeader };
+        
+        if (isHost) handleIncomingVote(voteData, peer.id);
+        else conn.send(voteData);
+        
+        document.getElementById('view-voting').innerHTML = "<h3>投票已送出，等待結果...</h3>";
+    }
+
+    function handleIncomingVote(data, voterId) {
+        if (data.isLeaderVote) {
+            let p = players.find(x => x.id === data.targetId);
+            if(p) p.score += 2;
+        } else {
+            let p = players.find(x => x.id === data.targetId);
+            if(p) p.votes = (p.votes || 0) + 1;
+        }
+
+        // 檢查是否所有人都投完
+        // 總票數應等於 玩家人數 (領袖1票 + 其他玩家每人1票)
+        const totalVotesReceived = players.reduce((sum, p) => sum + (p.voted ? 1 : 0), 0);
+        // 這裡簡化邏輯：Host 算一下收到多少個 VOTE_SUBMIT
+        if (!players.votedCount) players.votedCount = 0;
+        players.votedCount++;
+
+        if (players.votedCount >= players.length) {
+            players.votedCount = 0;
+            calculateNegativePoints();
+            broadcast({ type: 'ROUND_OVER', players: players.map(p => ({name: p.name, score: p.score, photo: p.photo})) });
+            showResultUI({ players: players });
+            setTimeout(() => nextRound(), 5000);
+        }
+    }
+
+    function calculateNegativePoints() {
+        const nonLeaders = players.filter(p => !p.isLeader);
+        const maxVotes = Math.max(...nonLeaders.map(p => p.votes));
+        const countWithMax = nonLeaders.filter(p => p.votes === maxVotes).length;
+        
+        // 若票數相同（且不為0），不扣分。若只有一人最高票，扣1分。
+        if (maxVotes > 0 && countWithMax === 1) {
+            let p = nonLeaders.find(p => p.votes === maxVotes);
+            p.score = Math.max(0, p.score - 1);
+        }
+    }
+
+    // --- UI 工具 ---
+    function switchView(viewId) {
+        document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
+        document.getElementById(viewId).classList.remove('hidden');
+    }
+
+    function updateLobbyUI(syncPlayers) {
+        const list = syncPlayers || players;
+        document.getElementById('player-count').innerText = list.length;
+        document.getElementById('player-list').innerHTML = list.map(p => `<span class="status-badge">${p.name}</span>`).join('');
+    }
+
+    function startTimer(seconds, callback) {
+        let t = seconds;
+        const el = document.querySelector('.timer:not(.hidden)');
+        if (el) el.innerText = t;
+        clearInterval(timerInterval);
+        timerInterval = setInterval(() => {
+            t--;
+            if (el) el.innerText = t;
+            if (t <= 0) {
+                clearInterval(timerInterval);
+                callback();
+            }
+        }, 1000);
+    }
+
+    function displayTopic(topic) {
+        broadcast({ type: 'DISPLAY_TOPIC', topic: topic });
+        document.getElementById('display-topic').innerText = topic;
+        startTimer(50, () => {
+            if (isHost) checkAllPhotosUploaded();
+        });
+    }
+
+    function showResultUI(data) {
+        switchView('view-results');
+        const list = data.players.sort((a,b) => b.score - a.score);
+        document.getElementById('round-rank').innerHTML = list.map(p => `<p>${p.name}: ${p.score}分</p>`).join('');
+    }
+
+    function showFinalUI(finalPlayers) {
+        switchView('view-final');
+        const list = [...finalPlayers].sort((a,b) => b.score - a.score);
+        document.getElementById('final-leaderboard').innerHTML = list.map((p, i) => `<h2>第${i+1}名: ${p.name} (${p.score}分)</h2>`).join('');
+    }
+
+</script>
+</body>
+</html>
