@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>誰的相簿? v0.61</title>
+    <title>誰的相簿? v0.65</title>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
@@ -108,7 +108,7 @@
 
     <div id="modal-settings" class="modal hidden">
         <div class="modal-content">
-            <h3 class="modal-title"><i class="fas fa-cog"></i> 遊戲規則設定</h3>
+            <h3 class="modal-title"><i class="fas fa-cog"></i> 規則設定</h3>
             
             <div class="setting-item">
                 <label>遊戲輪數</label>
@@ -173,7 +173,7 @@
                 <p class="timer-text" id="action-timer">--</p>
                 
                 <div id="leader-input-area" class="hidden" style="margin-top:15px;">
-                    <input type="text" id="topic-input" placeholder="請出題 (例: 最像8+9的動物)">
+                    <input type="text" id="topic-input" placeholder="請出題 (例: 綠色的)">
                     <button class="main-btn" onclick="submitTopic()">發布題目</button>
                 </div>
 
@@ -233,7 +233,7 @@
 
 <script>
     // --- 基礎變數 ---
-    const funnyNames = ["淡水金城武", "三重劉德華", "相簿破壞者", "自拍系教授", "路邊的野貓", "深海大鳳梨", "迷路的里長", "早餐店阿姨"];
+    const funnyNames = ["5487", "宜蘭地頭蛇","方臉","月龍","acde","成都超人", "aka澎澎", "掌管性別的神", "9981", "教皇", "我不是色盲", "三角飯糰"];
     
     let peer, conn, roomId;
     let myName = "";
@@ -253,7 +253,7 @@
     // --- 設定與建立 ---
     function showSettings() {
         myName = document.getElementById('player-name').value.trim();
-        if(!myName) return alert("請先輸入您的暱稱");
+        if(!myName) return alert("請先輸入暱稱");
         document.getElementById('modal-settings').classList.remove('hidden');
     }
     function hideSettings() { document.getElementById('modal-settings').classList.add('hidden'); }
@@ -521,7 +521,7 @@
             if(peer.id === data.leaderId) {
                 document.getElementById('player-upload-area').classList.add('hidden');
                 document.getElementById('wait-others-msg').classList.remove('hidden');
-                document.getElementById('wait-others-msg').innerHTML = `<p><i class="fas fa-coffee"></i> 領袖休息中，等待子民上傳...</p>`;
+                document.getElementById('wait-others-msg').innerHTML = `<p><i class="fas fa-coffee"></i> 領袖休息中，等待上傳...</p>`;
             } else {
                 document.getElementById('player-upload-area').classList.remove('hidden');
                 document.getElementById('wait-others-msg').classList.add('hidden');
@@ -532,7 +532,7 @@
             resetTimer(20, 'vote-timer', 'vote-bar');
             
             document.getElementById('vote-prompt').innerText = (peer.id === data.leaderId) 
-                ? "請選擇最符合的圖片 (+2分)" 
+                ? "請選擇最符合題目的圖片 (+2分)" 
                 : "請選擇最不符合的圖片 (-1分)";
             
             renderVotingGrid(data.photos);
@@ -705,3 +705,4 @@
 </script>
 </body>
 </html>
+
